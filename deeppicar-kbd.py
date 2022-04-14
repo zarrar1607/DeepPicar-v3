@@ -88,8 +88,25 @@ def overlay_image(l_img, s_img, x_offset, y_offset):
     return l_img
 
 ##########################################################
+# import deeppicar's DNN model
+##########################################################
+try:
+    # Import TFLite interpreter from tflite_runtime package if it's available.
+    from tflite_runtime.interpreter import Interpreter
+    interpreter = Interpreter(params.model_file+'.tflite')
+except ImportError:
+    # If not, fallback to use the TFLite interpreter from the full TF package.
+    import tensorflow as tf
+    interpreter = tf.lite.Interpreter(model_path=params.model_file+'.tflite')
+
+interpreter.allocate_tensors()
+input_index = interpreter.get_input_details()[0]["index"]
+output_index = interpreter.get_output_details()[0]["index"]
+
+##########################################################
 # program begins
 ##########################################################
+
 parser = argparse.ArgumentParser(description='DeepPicar main')
 parser.add_argument("-d", "--dnn", help="Enable DNN", action="store_true")
 parser.add_argument("-t", "--throttle", help="throttle percent. [0-100]%", type=int)
@@ -136,16 +153,6 @@ while img_counter < 10:
     img_counter += 1
 '''
 
-model = None
-
-# initilize dnn model
-if use_dnn == True:
-    print ("Load TF")
-    import tensorflow as tf
-    from tensorflow import keras
-    model = keras.models.load_model('models/keras_model.h5')
-    print ("Done..")
-
 # null_frame = np.zeros((cfg_cam_res[0],cfg_cam_res[1],3), np.uint8)
 # cv2.imshow('frame', null_frame)
 
@@ -160,9 +167,6 @@ while True:
         time.sleep(next(g))
     frame = camera.read_frame()
     ts = time.time()
-
-    # read a frame
-    # ret, frame = cap.read()
 
     if view_video == True:
         cv2.imshow('frame', frame)
@@ -216,12 +220,13 @@ while True:
         else:
             use_dnn = False
 
-    if use_dnn == True and model != None:
+    if use_dnn == True:
         # 1. machine input
-        img = preprocess.preprocess(frame)
+        img = preprocess(frame)
         img = np.expand_dims(img, axis=0).astype(np.float32)
-
-        angle = model.predict(img)[0][0]
+        interpreter.set_tensor(input_index, img)
+        interpreter.invoke()
+        angle = interpreter.get_tensor(output_index)[0][0]
         car_angle = 0
 
         degree = rad2deg(angle)
