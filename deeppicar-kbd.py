@@ -26,6 +26,7 @@ use_dnn = False
 use_thread = True
 view_video = False
 fpv_video = False
+enable_record = False
 
 cfg_cam_res = (320, 240)
 cfg_cam_fps = 30
@@ -57,10 +58,6 @@ def turn_off():
     actuator.stop()
     camera.stop()
 
-    keyfile.close()
-    keyfile_btn.close()
-    vidfile.release()
-
 def preprocess(img):
     assert params.img_channels == 3 # for now we expect a color image
     # ratio = params.img_height / params.img_width
@@ -88,22 +85,6 @@ def overlay_image(l_img, s_img, x_offset, y_offset):
     return l_img
 
 ##########################################################
-# import deeppicar's DNN model
-##########################################################
-try:
-    # Import TFLite interpreter from tflite_runtime package if it's available.
-    from tflite_runtime.interpreter import Interpreter
-    interpreter = Interpreter(params.model_file+'.tflite', num_threads=NCPU)
-except ImportError:
-    # If not, fallback to use the TFLite interpreter from the full TF package.
-    import tensorflow as tf
-    interpreter = tf.lite.Interpreter(model_path=params.model_file+'.tflite', num_threads=NCPU)
-
-interpreter.allocate_tensors()
-input_index = interpreter.get_input_details()[0]["index"]
-output_index = interpreter.get_output_details()[0]["index"]
-
-##########################################################
 # program begins
 ##########################################################
 
@@ -125,36 +106,27 @@ if args.ncpu > 0:
 if args.fpvvideo:
     fpv_video = True
 
-# create files for data recording
-keyfile = open('out-key.csv', 'w+')
-keyfile_btn = open('out-key-btn.csv', 'w+')
-keyfile.write("ts_micro,frame,wheel\n")
-keyfile_btn.write("ts_micro,frame,btn,speed\n")
-rec_start_time = 0
+
+##########################################################
+# import deeppicar's DNN model
+##########################################################
 try:
-    fourcc = cv2.cv.CV_FOURCC(*'XVID')
-except AttributeError as e:
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-vidfile = cv2.VideoWriter('out-video.avi', fourcc,
-                          cfg_cam_fps, cfg_cam_res)
+    # Import TFLite interpreter from tflite_runtime package if it's available.
+    from tflite_runtime.interpreter import Interpreter
+    interpreter = Interpreter(params.model_file+'.tflite', num_threads=NCPU)
+except ImportError:
+    # If not, fallback to use the TFLite interpreter from the full TF package.
+    import tensorflow as tf
+    interpreter = tf.lite.Interpreter(model_path=params.model_file+'.tflite', num_threads=NCPU)
+
+interpreter.allocate_tensors()
+input_index = interpreter.get_input_details()[0]["index"]
+output_index = interpreter.get_output_details()[0]["index"]
 
 # initlaize deeppicar modules
 actuator.init(cfg_throttle)
 camera.init(res=cfg_cam_res, fps=cfg_cam_fps, threading=use_thread)
 atexit.register(turn_off)
-
-# image capture for callibration
-'''img_counter = 0
-while img_counter < 10:
-    frame = camera.read_frame()
-    img_name = "cal_images/opencv_frame_{}.png".format(img_counter)
-    cv2.imwrite(img_name, frame)
-    print("{} written!".format(img_name))
-    img_counter += 1
-'''
-
-# null_frame = np.zeros((cfg_cam_res[0],cfg_cam_res[1],3), np.uint8)
-# cv2.imshow('frame', null_frame)
 
 g = g_tick()
 start_ts = time.time()
@@ -174,21 +146,21 @@ while True:
     else:
         ch = ord(input_kbd.read_single_keypress())
 
-    if ch == ord('j'):
-        actuator.left()
-        print ("left")
+    if ch == ord('j'): # left 
         angle = deg2rad(-30)
         btn   = ord('j')
-    elif ch == ord('k'):
-        actuator.center()
-        print ("center")
+        actuator.left()
+        print ("left")
+    elif ch == ord('k'): # center 
         angle = deg2rad(0)
         btn   = ord('k')
-    elif ch == ord('l'):
-        actuator.right()
-        print ("right")
+        actuator.center()
+        print ("center")
+    elif ch == ord('l'): # right
         angle = deg2rad(30)
         btn   = ord('l')
+        actuator.right()
+        print ("right")
     elif ch == ord('a'):
         actuator.ffw()
         print ("accel")
@@ -199,49 +171,37 @@ while True:
     elif ch == ord('z'):
         actuator.rew()
         print ("reverse")
-    elif ch == ord('q'):
-        break
     elif ch == ord('r'):
         print ("toggle record mode")
-        if rec_start_time == 0:
-            rec_start_time = ts
-        else:
-            rec_start_time = 0
+        enable_record = not enable_record
     elif ch == ord('t'):
         print ("toggle video mode")
-        if view_video == False:
-            view_video = True
-        else:
-            view_video = False
+        view_video = not view_video
     elif ch == ord('d'):
         print ("toggle DNN mode")
-        if use_dnn == False:
-            use_dnn = True
-        else:
-            use_dnn = False
-
-    if use_dnn == True:
+        use_dnn = not use_dnn
+    elif ch == ord('q'):
+        break
+    elif use_dnn == True:
         # 1. machine input
         img = preprocess(frame)
         img = np.expand_dims(img, axis=0).astype(np.float32)
         interpreter.set_tensor(input_index, img)
         interpreter.invoke()
         angle = interpreter.get_tensor(output_index)[0][0]
-        car_angle = 0
-
         degree = rad2deg(angle)
-        if degree < 15 and degree > -15:
+        if degree <= -15:
+            actuator.left()
+            btn   = ord('j')
+            print ("left (by DNN)")
+        elif degree < 15 and degree > -15:
             actuator.center()
-            car_angle = 0
-            btn = ord('k')
+            btn   = ord('k')
+            print ("center (by DNN)")
         elif degree >= 15:
             actuator.right()
-            car_angle = 30
-            btn = ord('l')
-        elif degree <= -15:
-            actuator.left()
-            car_angle = -30
-            btn = ord('j')
+            btn   = ord('l')
+            print ("right (by DNN)")
 
     dur = time.time() - ts
     if dur > period:
@@ -250,7 +210,19 @@ while True:
     else:
         print("%.3f: took %d ms" % (ts - start_ts, int(dur * 1000)))
 
-    if rec_start_time > 0 and not frame is None:
+    if enable_record == True and frame_id == 0:
+        # create files for data recording
+        keyfile = open('out-key.csv', 'w+')
+        keyfile_btn = open('out-key-btn.csv', 'w+')
+        keyfile.write("ts_micro,frame,wheel\n")
+        keyfile_btn.write("ts_micro,frame,btn,speed\n")
+        try:
+            fourcc = cv2.cv.CV_FOURCC(*'XVID')
+        except AttributeError as e:
+            fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        vidfile = cv2.VideoWriter('out-video.avi', fourcc,
+                                cfg_cam_fps, cfg_cam_res)
+    if enable_record == True and not frame is None:
         # increase frame_id
         frame_id += 1
 
@@ -268,7 +240,7 @@ while True:
             newImage = Image.new('RGBA', (100, 20), bgColor)
             drawer = ImageDraw.Draw(newImage)
             drawer.text((0, 0), "Frame #{}".format(frame_id), fill=textColor)
-            drawer.text((0, 10), "Angle:{}".format(car_angle), fill=textColor)
+            drawer.text((0, 10), "Angle:{}".format(angle), fill=textColor)
             newImage = cv2.cvtColor(np.array(newImage), cv2.COLOR_BGR2RGBA)
             frame = overlay_image(frame,
                                      newImage,
