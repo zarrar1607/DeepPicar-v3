@@ -48,3 +48,14 @@ def stop():
     global use_thread
     print ("Close the camera.")
     use_thread = False
+
+if __name__ == "__main__":
+    init()
+    while True:
+        frame = read_frame()
+        cv2.imshow('frame', frame)
+        ch = cv2.waitKey(1) & 0xFF
+        if ch == ord('q'):
+            stop()
+            break
+    
