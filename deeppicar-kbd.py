@@ -31,7 +31,7 @@ cfg_cam_res = (320, 240)
 cfg_cam_fps = 30
 cfg_throttle = 50 # 50% power.
 
-NCPU = 2
+NCPU = 1
 
 frame_id = 0
 angle = 0.0
@@ -93,11 +93,11 @@ def overlay_image(l_img, s_img, x_offset, y_offset):
 try:
     # Import TFLite interpreter from tflite_runtime package if it's available.
     from tflite_runtime.interpreter import Interpreter
-    interpreter = Interpreter(params.model_file+'.tflite')
+    interpreter = Interpreter(params.model_file+'.tflite', num_threads=NCPU)
 except ImportError:
     # If not, fallback to use the TFLite interpreter from the full TF package.
     import tensorflow as tf
-    interpreter = tf.lite.Interpreter(model_path=params.model_file+'.tflite')
+    interpreter = tf.lite.Interpreter(model_path=params.model_file+'.tflite', num_threads=NCPU)
 
 interpreter.allocate_tensors()
 input_index = interpreter.get_input_details()[0]["index"]
