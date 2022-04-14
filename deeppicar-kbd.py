@@ -193,15 +193,15 @@ while True:
         if degree <= -15:
             actuator.left()
             btn   = ord('j')
-            print ("left (by DNN)")
+            print ("left (CPU)")
         elif degree < 15 and degree > -15:
             actuator.center()
             btn   = ord('k')
-            print ("center (by DNN)")
+            print ("center (CPU)")
         elif degree >= 15:
             actuator.right()
             btn   = ord('l')
-            print ("right (by DNN)")
+            print ("right (CPU)")
 
     dur = time.time() - ts
     if dur > period:
