@@ -8,11 +8,9 @@ Dave-2 and can drive itself in real-time locally on a Raspberry Pi 3.
 
 ## Setup
 
-'''
-	$ git clone --depth=1 https://github.com/heechul/DeepPicar-v3 -b devel
+    $ git clone --depth=1 https://github.com/heechul/DeepPicar-v3 -b devel
     $ sudo apt install libatlas-base-dev
     $ sudo pip3 install -r requirements.txt
-'''
 
 ## Manual control and Data collection
 
