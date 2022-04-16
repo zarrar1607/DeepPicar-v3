@@ -8,10 +8,25 @@ Dave-2 and can drive itself in real-time locally on a Raspberry Pi 3.
 
 ## Setup
 
-    $ git clone --depth=1 https://github.com/heechul/DeepPicar-v3 -b devel
+Install DeepPicar.
+
     $ sudo apt install libatlas-base-dev
+    $ git clone --depth=1 https://github.com/heechul/DeepPicar-v3 -b devel
+    $ cd DeepPicar-v3 
     $ sudo pip3 install -r requirements.txt
 
+Edit 'params.py' to select correct camera and actuator drivers. 
+The setting below represents the standard webcam and drv8835 configuration, for example. 
+
+    camera="camera-webcam"
+    actuator="actuator-drv8835". 
+    
+In addition, you need to install necessary python drivers. For polulu drv8835, do following.
+
+    $ git clone https://github.com/pololu/drv8835-motor-driver-rpi.git
+    $ cd drv8835-motor-driver-rpi
+    $ sudo python setup.py install
+    
 ## Manual control and Data collection
 
     $ sudo python3 deeppicar-kbd.py
