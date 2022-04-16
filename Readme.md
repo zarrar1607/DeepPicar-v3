@@ -19,7 +19,7 @@ Edit 'params.py' to select correct camera and actuator drivers.
 The setting below represents the standard webcam and drv8835 configuration, for example. 
 
     camera="camera-webcam"
-    actuator="actuator-drv8835". 
+    actuator="actuator-drv8835"
     
 In addition, you need to install necessary python drivers. For polulu drv8835, do following.
 
