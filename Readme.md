@@ -25,7 +25,7 @@ In addition, you need to install necessary python drivers. For polulu drv8835, d
 
     $ git clone https://github.com/pololu/drv8835-motor-driver-rpi.git
     $ cd drv8835-motor-driver-rpi
-    $ sudo python setup.py install
+    $ sudo python3 setup.py install
     
 ## Manual control and Data collection
 
