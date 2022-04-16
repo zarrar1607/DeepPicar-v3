@@ -15,7 +15,7 @@ Install DeepPicar.
     $ cd DeepPicar-v3 
     $ sudo pip3 install -r requirements.txt
 
-Edit 'params.py' to select correct camera and actuator drivers. 
+Edit `params.py` to select correct camera and actuator drivers. 
 The setting below represents the standard webcam and drv8835 configuration, for example. 
 
     camera="camera-webcam"
