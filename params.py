@@ -20,7 +20,7 @@ actuator="actuator-null"
 # model selection
 #   "model-5conv_3fc"   <-- nvidia dave-2 model
 ##########################################################
-model_name = "model_large-d1-DWConv"
+model_name = "model_large"
 img_width = 200
 img_height = 66
 img_channels = 3
