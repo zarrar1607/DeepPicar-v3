@@ -36,7 +36,6 @@ NCPU = 1
 
 frame_id = 0
 angle = 0.0
-btn   = ord('k') # center
 period = 0.05 # sec (=50ms)
 
 ##########################################################
@@ -57,6 +56,9 @@ def g_tick():
 def turn_off():
     actuator.stop()
     camera.stop()
+    if frame_id > 0:
+        keyfile.close()
+        vidfile.close()
 
 def preprocess(img):
     assert params.img_channels == 3 # for now we expect a color image
@@ -148,17 +150,14 @@ while True:
 
     if ch == ord('j'): # left 
         angle = deg2rad(-30)
-        btn   = ord('j')
         actuator.left()
         print ("left")
     elif ch == ord('k'): # center 
         angle = deg2rad(0)
-        btn   = ord('k')
         actuator.center()
         print ("center")
     elif ch == ord('l'): # right
         angle = deg2rad(30)
-        btn   = ord('l')
         actuator.right()
         print ("right")
     elif ch == ord('a'):
@@ -167,7 +166,6 @@ while True:
     elif ch == ord('s'):
         actuator.stop()
         print ("stop")
-        btn   = ch
     elif ch == ord('z'):
         actuator.rew()
         print ("reverse")
@@ -192,15 +190,12 @@ while True:
         degree = rad2deg(angle)
         if degree <= -15:
             actuator.left()
-            btn   = ord('j')
             print ("left (CPU)")
         elif degree < 15 and degree > -15:
             actuator.center()
-            btn   = ord('k')
             print ("center (CPU)")
         elif degree >= 15:
             actuator.right()
-            btn   = ord('l')
             print ("right (CPU)")
 
     dur = time.time() - ts
@@ -212,27 +207,21 @@ while True:
 
     if enable_record == True and frame_id == 0:
         # create files for data recording
-        keyfile = open('out-key.csv', 'w+')
-        keyfile_btn = open('out-key-btn.csv', 'w+')
+        keyfile = open(params.rec_csv_file, 'w+')
         keyfile.write("ts_micro,frame,wheel\n")
-        keyfile_btn.write("ts_micro,frame,btn,speed\n")
         try:
             fourcc = cv2.cv.CV_FOURCC(*'XVID')
         except AttributeError as e:
             fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        vidfile = cv2.VideoWriter('out-video.avi', fourcc,
+        vidfile = cv2.VideoWriter(params.rec_vid_file, fourcc,
                                 cfg_cam_fps, cfg_cam_res)
-    if enable_record == True and not frame is None:
+    if enable_record == True and frame is not None:
         # increase frame_id
         frame_id += 1
 
         # write input (angle)
         str = "{},{},{}\n".format(int(ts*1000), frame_id, angle)
         keyfile.write(str)
-
-        # write input (button: left, center, stop, speed)
-        str = "{},{},{},{}\n".format(int(ts*1000), frame_id, btn, cfg_throttle)
-        keyfile_btn.write(str)
 
         if use_dnn and fpv_video:
             textColor = (255,255,255)
@@ -252,8 +241,8 @@ while True:
         if frame_id >= 1000:
             print ("recorded 1000 frames")
             break
-        print ("%.3f %d %.3f %d %d(ms)" %
-           (ts, frame_id, angle, btn, int((time.time() - ts)*1000)))
+        print ("%.3f %d %.3f %d(ms)" %
+           (ts, frame_id, angle, int((time.time() - ts)*1000)))
 
 print ("Finish..")
 turn_off()

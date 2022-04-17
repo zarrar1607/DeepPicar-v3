@@ -28,3 +28,9 @@ model_file = "models/{}-{}x{}x{}".format(model_name[6:], img_width, img_height, 
 img_height = 66
 img_width = 200
 img_channels = 3
+
+##########################################################
+# recording config 
+##########################################################
+rec_vid_file="out-video.avi"
+rec_csv_file="out-key.csv"
