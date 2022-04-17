@@ -39,7 +39,6 @@ The key commands for controlling the DeepPicar are as follows:
 * **'j'**: turn left
 * **'l'**: turn right 
 * **'k'**: center
-* **'t'**: toggle view window
 * **'r'**: toggle recording
 * **'d'**: toggle DNN based autonomous driving
 * **'q'**: quit
@@ -74,9 +73,11 @@ After you are done trainig, you need to copy the trained tflite model file (`lar
 
 Copy the trained model to the DeepPicar. 
 
-Enable autonomous driving by suppling '-d' command line argument. You can start/stop autonomous driving by pressing `d` key while running the program. 
+Enable autonomous driving by suppling `-d` command line argument as below. 
 
     $ sudo python3 deeppicar-kbd.py -d 
+
+You can start/stop autonomous driving by pressing `d` key while running the program. 
 
 ## Driving Videos
 
