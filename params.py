@@ -3,14 +3,14 @@
 # camera module selection
 #   "camera-webcam" "camera-null"
 ##########################################################
-camera="camera-null"
+camera="camera-webcam"
 
 ##########################################################
 # actuator selection
 #   "actuator-drv8835", "actuator-adafruit_hat"
 #   "actuator-null"
 ##########################################################
-actuator="actuator-null"
+actuator="actuator-drv8835"
 
 ##########################################################
 # model selection
