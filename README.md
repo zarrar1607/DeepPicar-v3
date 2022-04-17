@@ -62,14 +62,19 @@ Move the dataset to your PC.
 
 On your PC, use your browser to download the dataset file by entering `https://<ip_addr_of_your_pi>:8000/Dataset.zip`
 
-
 ## Train the model
+    
+Open the colab notebook. Following the notebook, you will upload the dataset to the colab, train the model, and download the model back to your PC. 
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/heechul/DeepPicar-v3/blob/devel/RunAll.ipynb)
 
+After you are done trainig, you need to copy the trained tflite model file (`large-200x600x3.tflite` as default) to the robot. 
+
 ## Autonomous control
 
-copy the trained model to the pi
+Copy the trained model to the DeepPicar. 
+
+Enable autonomous driving by suppling '-d' command line argument. You can start/stop autonomous driving by pressing `d` key while running the program. 
 
     $ sudo python3 deeppicar-kbd.py -d 
 
