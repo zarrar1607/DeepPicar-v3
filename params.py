@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
-
-import os
-
 ##########################################################
 # camera module selection
 #   "camera-webcam" "camera-null"
@@ -18,7 +14,7 @@ actuator="actuator-null"
 
 ##########################################################
 # model selection
-#   "model-5conv_3fc"   <-- nvidia dave-2 model
+#   "model_large"   <-- nvidia dave-2 model
 ##########################################################
 model_name = "model_large"
 img_width = 200
@@ -32,15 +28,3 @@ model_file = "models/{}-{}x{}x{}".format(model_name[6:], img_width, img_height, 
 img_height = 66
 img_width = 200
 img_channels = 3
-
-##########################################################
-# directories
-##########################################################
-save_dir = os.path.abspath('models')
-data_dir = os.path.abspath('epochs')
-out_dir = os.path.abspath('output')
-
-if not os.path.isdir(data_dir):
-    os.makedirs(data_dir)
-if not os.path.isdir(out_dir):
-    os.makedirs(out_dir)
