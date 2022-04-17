@@ -45,9 +45,26 @@ The key commands for controlling the DeepPicar are as follows:
 * **'q'**: quit
 
 Use the keys to manually control the car. Once you become confident in controlling the car, collect the data to be used for training the DNN model. 
+
 The data collection can be enabled and stopped by pressing 'r' key. Once recording is enabled, the video feed and the corresponding control inputs are stored in 'out-video.avi' and 'out-key.csv' files, respectively. Later, we will use these files for training. 
 
+Rename recorded avi and csv files to out-video-XX.avi and out-video-XX.csv where XX with appropriate numbers. 
+
+Compress all the recorded files into a single zip file, say Dataset.zip, and copy the file to the host PC. 
+
+    $ zip Dataset.zip out-*
+    updating: out-key.csv (deflated 81%)
+    updating: out-video.avi (deflated 3%)
+
+Move the dataset to your PC. 
+
+    $  python -m http.server
+
+On your PC, use your browser to download the dataset file by entering `https://<ip_addr_of_your_pi>:8000/Dataset.zip`
+
+
 ## Train the model
+
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/heechul/DeepPicar-v3/blob/devel/RunAll.ipynb)
 
 ## Autonomous control
