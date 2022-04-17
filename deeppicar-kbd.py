@@ -58,7 +58,7 @@ def turn_off():
     camera.stop()
     if frame_id > 0:
         keyfile.close()
-        vidfile.close()
+        vidfile.release()
 
 def preprocess(img):
     assert params.img_channels == 3 # for now we expect a color image
