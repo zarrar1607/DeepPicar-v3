@@ -2,7 +2,7 @@
 
 DeepPicar is a low-cost autonomous RC car platform using a deep
 convolutional neural network (CNN). DeepPicar is a small scale replication
-of NVIDIA's real self-driving car called Dave-2, which drove on public
+of [NVIDIA's real self-driving car called Dave-2](https://developer.nvidia.com/blog/deep-learning-self-driving-cars/), which drove on public
 roads using a CNN. DeepPicar uses the same CNN architecture of NVIDIA's
 Dave-2 and can drive itself in real-time locally on a Raspberry Pi 3.
 
