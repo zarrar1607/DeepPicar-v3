@@ -32,8 +32,6 @@ cfg_cam_res = (320, 240)
 cfg_cam_fps = 30
 cfg_throttle = 50 # 50% power.
 
-NCPU = 1
-
 frame_id = 0
 angle = 0.0
 period = 0.05 # sec (=50ms)
@@ -93,7 +91,7 @@ def overlay_image(l_img, s_img, x_offset, y_offset):
 parser = argparse.ArgumentParser(description='DeepPicar main')
 parser.add_argument("-d", "--dnn", help="Enable DNN", action="store_true")
 parser.add_argument("-t", "--throttle", help="throttle percent. [0-100]%", type=int)
-parser.add_argument("-n", "--ncpu", help="number of cores to use.", type=int, default=4)
+parser.add_argument("-n", "--ncpu", help="number of cores to use.", type=int, default=1)
 parser.add_argument("-f", "--fpvvideo", help="Take FPV video of DNN driving", action="store_true")
 args = parser.parse_args()
 
@@ -103,8 +101,6 @@ if args.dnn:
 if args.throttle:
     cfg_throttle = args.throttle
     print ("throttle = %d pct" % (args.throttle))
-if args.ncpu > 0:
-    NCPU = args.ncpu
 if args.fpvvideo:
     fpv_video = True
 
@@ -115,11 +111,11 @@ if args.fpvvideo:
 try:
     # Import TFLite interpreter from tflite_runtime package if it's available.
     from tflite_runtime.interpreter import Interpreter
-    interpreter = Interpreter(params.model_file+'.tflite', num_threads=NCPU)
+    interpreter = Interpreter(params.model_file+'.tflite', num_threads=args.ncpu)
 except ImportError:
     # If not, fallback to use the TFLite interpreter from the full TF package.
     import tensorflow as tf
-    interpreter = tf.lite.Interpreter(model_path=params.model_file+'.tflite', num_threads=NCPU)
+    interpreter = tf.lite.Interpreter(model_path=params.model_file+'.tflite', num_threads=args.ncpu)
 
 interpreter.allocate_tensors()
 input_index = interpreter.get_input_details()[0]["index"]
