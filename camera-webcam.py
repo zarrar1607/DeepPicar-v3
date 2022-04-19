@@ -3,6 +3,7 @@ from threading import Thread,Lock
 import time
 
 use_thread = False
+need_flip = False
 cap = None
 frame = None
 
@@ -34,7 +35,11 @@ def init(res=(320, 240), fps=30, threading=True):
 def __update():
     global frame
     while use_thread:
-        ret, frame = cap.read() # blocking read
+        ret, tmp_frame = cap.read() # blocking read
+        if need_flip == True:
+            frame = cv2.flip(tmp_frame, -1)
+        else:
+            frame = tmp_frame
     print ("Camera thread finished...")
     cap.release()        
 
