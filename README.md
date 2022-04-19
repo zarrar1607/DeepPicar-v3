@@ -67,7 +67,7 @@ Open the colab notebook. Following the notebook, you will upload the dataset to 
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/heechul/DeepPicar-v3/blob/devel/RunAll.ipynb)
 
-After you are done trainig, you need to copy the trained tflite model file (`large-200x600x3.tflite` by default) to the robot. 
+After you are done trainig, you need to copy the trained tflite model file (`large-200x66x3.tflite` by default) to the robot. 
 
 ## Autonomous control
 
