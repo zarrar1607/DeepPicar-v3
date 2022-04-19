@@ -40,7 +40,7 @@ The key commands for controlling the DeepPicar are as follows:
 * **'l'**: turn right 
 * **'k'**: center
 * **'r'**: toggle recording
-* **'d'**: toggle DNN based autonomous driving
+* **'d'**: toggle autonomous driving
 * **'q'**: quit
 
 Use the keys to manually control the car. Once you become confident in controlling the car, collect the data to be used for training the DNN model. 
