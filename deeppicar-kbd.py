@@ -59,14 +59,11 @@ def turn_off():
         vidfile.release()
 
 def preprocess(img):
-    assert params.img_channels == 3 # for now we expect a color image
-    # ratio = params.img_height / params.img_width
-    # y1, y2 = 350, 553
-    # w = (y2-y1) / ratio
-    # padding = int(round((img.shape[1] - w) / 2))
-    # print (padding)
-    # img = img[y1:y2, padding:-padding]
     img = cv2.resize(img, (params.img_width, params.img_height))
+    # Convert to grayscale and readd channel dimension
+    if params.img_channels == 1:
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        img = np.reshape(img, (params.img_height, params.img_width, params.img_channels))
     img = img / 255.
     return img
 
@@ -108,6 +105,7 @@ if args.fpvvideo:
 ##########################################################
 # import deeppicar's DNN model
 ##########################################################
+print ("Loading model: " + params.model_file)
 try:
     # Import TFLite interpreter from tflite_runtime package if it's available.
     from tflite_runtime.interpreter import Interpreter
