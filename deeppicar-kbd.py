@@ -32,8 +32,6 @@ cfg_cam_res = (320, 240)
 cfg_cam_fps = 30
 cfg_throttle = 50 # 50% power.
 
-NCPU = 1
-
 frame_id = 0
 angle = 0.0
 period = 0.05 # sec (=50ms)
@@ -61,14 +59,11 @@ def turn_off():
         vidfile.release()
 
 def preprocess(img):
-    assert params.img_channels == 3 # for now we expect a color image
-    # ratio = params.img_height / params.img_width
-    # y1, y2 = 350, 553
-    # w = (y2-y1) / ratio
-    # padding = int(round((img.shape[1] - w) / 2))
-    # print (padding)
-    # img = img[y1:y2, padding:-padding]
     img = cv2.resize(img, (params.img_width, params.img_height))
+    # Convert to grayscale and readd channel dimension
+    if params.img_channels == 1:
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        img = np.reshape(img, (params.img_height, params.img_width, params.img_channels))
     img = img / 255.
     return img
 
@@ -93,7 +88,7 @@ def overlay_image(l_img, s_img, x_offset, y_offset):
 parser = argparse.ArgumentParser(description='DeepPicar main')
 parser.add_argument("-d", "--dnn", help="Enable DNN", action="store_true")
 parser.add_argument("-t", "--throttle", help="throttle percent. [0-100]%", type=int)
-parser.add_argument("-n", "--ncpu", help="number of cores to use.", type=int, default=4)
+parser.add_argument("-n", "--ncpu", help="number of cores to use.", type=int, default=1)
 parser.add_argument("-f", "--fpvvideo", help="Take FPV video of DNN driving", action="store_true")
 args = parser.parse_args()
 
@@ -103,8 +98,6 @@ if args.dnn:
 if args.throttle:
     cfg_throttle = args.throttle
     print ("throttle = %d pct" % (args.throttle))
-if args.ncpu > 0:
-    NCPU = args.ncpu
 if args.fpvvideo:
     fpv_video = True
 
@@ -112,14 +105,15 @@ if args.fpvvideo:
 ##########################################################
 # import deeppicar's DNN model
 ##########################################################
+print ("Loading model: " + params.model_file)
 try:
     # Import TFLite interpreter from tflite_runtime package if it's available.
     from tflite_runtime.interpreter import Interpreter
-    interpreter = Interpreter(params.model_file+'.tflite', num_threads=NCPU)
+    interpreter = Interpreter(params.model_file+'.tflite', num_threads=args.ncpu)
 except ImportError:
     # If not, fallback to use the TFLite interpreter from the full TF package.
     import tensorflow as tf
-    interpreter = tf.lite.Interpreter(model_path=params.model_file+'.tflite', num_threads=NCPU)
+    interpreter = tf.lite.Interpreter(model_path=params.model_file+'.tflite', num_threads=args.ncpu)
 
 interpreter.allocate_tensors()
 input_index = interpreter.get_input_details()[0]["index"]
