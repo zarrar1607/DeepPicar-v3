@@ -45,7 +45,7 @@ The key commands for controlling the DeepPicar are as follows:
 
 Use the keys to manually control the car. Once you become confident in controlling the car, collect the data to be used for training the DNN model. 
 
-The data collection can be enabled and stopped by pressing `r` key. Once recording is enabled, the video feed and the corresponding control inputs are stored in 'out-video.avi' and 'out-key.csv' files, respectively. Later, we will use these files for training. 
+The data collection can be enabled and stopped by pressing `r` key. Once recording is enabled, the video feed and the corresponding control inputs are stored in `out-video.avi` and `out-key.csv` files, respectively. Later, we will use these files for training. 
 
 Rename recorded avi and csv files to out-video-XX.avi and out-video-XX.csv where XX with appropriate numbers. 
 
