@@ -57,7 +57,7 @@ Compress all the recorded files into a single zip file, say Dataset.zip, and cop
 
 Move the dataset to your PC. 
 
-    $  python -m http.server
+    $ python3 -m http.server
 
 On your PC, use your browser to download the dataset file by entering `https://<ip_addr_of_your_pi>:8000/Dataset.zip`
 
@@ -67,7 +67,13 @@ Open the colab notebook. Following the notebook, you will upload the dataset to 
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/heechul/DeepPicar-v3/blob/devel/RunAll.ipynb)
 
-After you are done trainig, you need to copy the trained tflite model file (`large-200x66x3.tflite` by default) to the robot. 
+After you are done trainig, you need to copy the trained tflite model file (`large-200x66x3.tflite` by default) to the Pi as follow (alternative, you can simply copy the file via `scp` instead). 
+
+    $ python3 -m uploadserver --directory models/
+
+On your PC, use your browser to upload the tflite model file to the Pi. 
+On the browser URL bar, enter `https://<ip_addr_of_your_pi>:8000/upload`. 
+Then, select the downloaded tflite file via `Browser...` and click `Submit Query` to upload the file.
 
 ## Autonomous control
 
