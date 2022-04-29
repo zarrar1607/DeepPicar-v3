@@ -84,6 +84,7 @@ Enable autonomous driving by suppling `-d` command line argument as below.
     $ sudo python3 deeppicar-kbd.py -d 
 
 You can start/stop autonomous driving by pressing `d` key while running the program. 
+Note that you still need to initiate a forward movement by pressing `a` because the DNN only controls steering.  
 
 ## Driving Videos
 
