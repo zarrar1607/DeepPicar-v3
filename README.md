@@ -3,7 +3,7 @@
 DeepPicar is a low-cost autonomous RC car platform using a deep
 convolutional neural network (CNN). DeepPicar is a small scale replication
 of [NVIDIA's real self-driving car called DAVE-2](https://developer.nvidia.com/blog/deep-learning-self-driving-cars/), which drove on public
-roads using. DeepPicar uses the same CNN architecture of NVIDIA's
+roads using a CNN. DeepPicar uses the same CNN architecture of NVIDIA's
 DAVE-2 and can drive itself in real-time locally on a Raspberry Pi.
 
 ## Setup
@@ -57,7 +57,7 @@ Compress all the recorded files into a single zip file, say Dataset.zip, and cop
 
 Move the dataset to your PC. 
 
-    $  python -m http.server
+    $ python3 -m http.server
 
 On your PC, use your browser to download the dataset file by entering `https://<ip_addr_of_your_pi>:8000/Dataset.zip`
 
@@ -67,7 +67,13 @@ Open the colab notebook. Following the notebook, you will upload the dataset to 
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/heechul/DeepPicar-v3/blob/devel/RunAll.ipynb)
 
-After you are done trainig, you need to copy the trained tflite model file (`large-200x66x3.tflite` by default) to the robot. 
+After you are done trainig, you need to copy the trained tflite model file (`large-200x66x3.tflite` by default) to the Pi as follow (alternative, you can simply copy the file via `scp` instead). 
+
+    $ python3 -m uploadserver --directory models/
+
+On your PC, use your browser to upload the tflite model file to the Pi. 
+On the browser URL bar, enter `https://<ip_addr_of_your_pi>:8000/upload`. 
+Then, select the downloaded tflite file via `Browse...` and click `Submit Query` to upload the file.
 
 ## Autonomous control
 
@@ -78,6 +84,7 @@ Enable autonomous driving by suppling `-d` command line argument as below.
     $ sudo python3 deeppicar-kbd.py -d 
 
 You can start/stop autonomous driving by pressing `d` key while running the program. 
+Note that you still need to initiate a forward movement by pressing `a` because the DNN only controls steering.  
 
 ## Driving Videos
 
