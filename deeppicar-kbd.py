@@ -9,8 +9,7 @@ import sys
 import params
 import argparse
 
-from PIL import Image
-from PIL import ImageDraw
+from PIL import Image, ImageDraw
 import input_kbd
 
 ##########################################################
@@ -89,7 +88,8 @@ parser = argparse.ArgumentParser(description='DeepPicar main')
 parser.add_argument("-d", "--dnn", help="Enable DNN", action="store_true")
 parser.add_argument("-t", "--throttle", help="throttle percent. [0-100]%", type=int)
 parser.add_argument("-n", "--ncpu", help="number of cores to use.", type=int, default=1)
-parser.add_argument("-f", "--fpvvideo", help="Take FPV video of DNN driving", action="store_true")
+parser.add_argument("-f", "--hz", help="control frequnecy", type=int)
+parser.add_argument("--fpvvideo", help="Take FPV video of DNN driving", action="store_true")
 args = parser.parse_args()
 
 if args.dnn:
@@ -98,8 +98,12 @@ if args.dnn:
 if args.throttle:
     cfg_throttle = args.throttle
     print ("throttle = %d pct" % (args.throttle))
+if args.hz:
+    period = 1.0/args.hz
+    print("new period: ", period)
 if args.fpvvideo:
     fpv_video = True
+    print("FPV video of DNN driving is on")
 
 
 ##########################################################
