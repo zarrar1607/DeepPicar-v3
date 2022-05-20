@@ -26,12 +26,24 @@ In addition, you need to install necessary python drivers. For polulu drv8835, d
     $ git clone https://github.com/pololu/drv8835-motor-driver-rpi.git
     $ cd drv8835-motor-driver-rpi
     $ sudo python3 setup.py install
+
+Also install the python package "inputs" if you would like to to use Logitech F710 gamepad for data collection.
+
+    $ git clone https://github.com/zeth/inputs.git
+    $ cd inputs
+    $ python setup.py install
     
 ## Manual control and Data collection
 
-    $ sudo python3 deeppicar-kbd.py
+With keyboard:
 
-The key commands for controlling the DeepPicar are as follows:
+    $ sudo python3 deeppicar.py
+
+Or with gamepad:
+
+    $ sudo python3 deeppicar.py --gamepad
+
+The key commands for controlling the DeepPicar with keyboard are as follows:
 
 * **'a'**: move forward 
 * **'z'**: move backward

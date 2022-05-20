@@ -8,6 +8,9 @@ def init(default_speed=50):
 # throttle
 cur_speed = MAX_SPEED
 
+def get_max_speed():
+    return MAX_SPEED
+
 def set_speed(speed):
     global cur_speed
     speed = int(MAX_SPEED * speed / 100)
@@ -28,10 +31,10 @@ def rew():
 # steering
 def center():
     motors.motor1.setSpeed(0)
-def left():
-    motors.motor1.setSpeed(MAX_SPEED)
-def right():
-    motors.motor1.setSpeed(-MAX_SPEED)
+def left(speed=MAX_SPEED):
+    motors.motor1.setSpeed(speed)
+def right(speed=-MAX_SPEED):
+    motors.motor1.setSpeed(speed)
 
 # exit    
 def turn_off():
