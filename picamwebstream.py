@@ -35,6 +35,13 @@ class StreamingOutput(object):
         return self.buffer.write(buf)
 
 class StreamingHandler(server.BaseHTTPRequestHandler):
+    def do_OPTIONS(self):
+        self.send_response(200, "ok")
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS, POST')
+        self.send_header("Access-Control-Allow-Headers", "X-Requested-With")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
     def do_GET(self):
         if self.path == '/':
             self.send_response(301)
@@ -73,13 +80,56 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.send_error(404)
             self.end_headers()
 
+    def do_POST(self):
+        if self.path == '/actuate':
+            self.send_response(200)
+            self.end_headers()
+            self.data_string = self.rfile.read(int(self.headers['Content-Length']))
+
+            data = json.loads(self.data_string)
+            print (data)
+            if data['params']['direction'] == 'left':
+                print("left")
+                actuator.left()
+            if data['params']['direction'] == 'center':
+                print("center")
+                actuator.center()
+            if data['params']['direction'] == 'right':
+                print("right")
+                actuator.right()
+            if data['params']['direction'] == 'forward':
+                print ("accel")
+                actuator.ffw()
+            if data['params']['direction'] == 'stop':
+                print ("stop")
+                actuator.stop()
+            if data['params']['direction'] == 'reverse':
+                print ("reverse")
+                actuator.rew()
+        if self.path == '/record':
+            self.send_response(200)
+            self.end_headers()
+            self.data_string = self.rfile.read(int(self.headers['Content-Length']))
+
+            data = json.loads(self.data_string)
+            print (data)
+            if data['params']['action'] == 'begin':
+                print("record")
+                camera.start_recording(output, format='mjpeg')
+            if data['params']['action'] == 'finish':
+                print("finish")
+                camera.stop_recording()
+            if data['params']['action'] == 'download':
+                print("download")
+                actuator.right()
+
 class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
     allow_reuse_address = True
     daemon_threads = True
 
 with picamera.PiCamera(resolution='640x480', framerate=24) as camera:
+    actuator.init(50)
     output = StreamingOutput()
-    camera.start_recording(output, format='mjpeg')
     try:
         address = ('', 8000)
         server = StreamingServer(address, StreamingHandler)
