@@ -1,7 +1,7 @@
 import io
 import cv2
 camera   = __import__("camera-webcam")
-actuator = __import__("actuator-null")
+actuator = __import__("actuator-drv8835")
 import logging
 import socketserver
 from threading import Condition
@@ -9,6 +9,7 @@ from http import server
 import json
 from os import curdir
 import time
+import math
 
 
 
@@ -23,6 +24,10 @@ PAGE="""\
 </body>
 </html>
 """
+def deg2rad(deg):
+    return deg * math.pi / 180.0
+def rad2deg(rad):
+    return 180.0 * rad / math.pi
 
 class StreamingHandler(server.BaseHTTPRequestHandler):
     def do_OPTIONS(self):
@@ -98,12 +103,15 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             data = json.loads(self.data_string)
             print (data)
             if data['params']['direction'] == 'left':
+                angle = deg2rad(-30)
                 print("left")
                 actuator.left()
             if data['params']['direction'] == 'center':
+                angle = deg2rad(0)
                 print("center")
                 actuator.center()
             if data['params']['direction'] == 'right':
+                angle = deg2rad(30)
                 print("right")
                 actuator.right()
             if data['params']['direction'] == 'forward':
