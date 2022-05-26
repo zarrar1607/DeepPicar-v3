@@ -77,7 +77,7 @@ On your PC, use your browser to download the dataset file by entering `https://<
     
 Open the colab notebook. Following the notebook, you will upload the dataset to the colab, train the model, and download the model back to your PC. 
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/KU-CSL/DeepPicar-v3/blob/devel/RunAll.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/CSL-KU/DeepPicar-v3/blob/devel/RunAll.ipynb)
 
 After you are done trainig, you need to copy the trained tflite model file (`large-200x66x3.tflite` by default) to the Pi as follow (alternative, you can simply copy the file via `scp` instead). 
 
