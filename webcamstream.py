@@ -168,6 +168,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                     keyfile.write(str)
 
                     # write video stream
+                    frame = camera.read_frame()
                     vidfile.write(frame)
                     print ("%.3f %d %.3f %d(ms)" %
                     (ts, frame_id, angle, int((time.time() - ts)*1000)))
