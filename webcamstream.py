@@ -7,10 +7,10 @@ import socketserver
 from threading import Condition
 from http import server
 import json
-from os import curdir
+import os
 import time
 import math
-
+import numpy as np
 
 
 PAGE="""\
@@ -28,6 +28,15 @@ def deg2rad(deg):
     return deg * math.pi / 180.0
 def rad2deg(rad):
     return 180.0 * rad / math.pi
+
+def preprocess(img):
+    img = cv2.resize(img, (200, 66))
+    # Convert to grayscale and readd channel dimension
+    if params.img_channels == 1:
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        img = np.reshape(img, (66, 200, 3))
+    img = img / 255.
+    return img
 
 class StreamingHandler(server.BaseHTTPRequestHandler):
     def do_OPTIONS(self):
@@ -72,14 +81,14 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                     'Removed streaming client %s: %s',
                     self.client_address, str(e))
         elif self.path == '/out-key.csv':
-            f = open(curdir + self.path, 'rb')
+            f = open(os.curdir + self.path, 'rb')
             self.send_response(200)
             self.send_header('Content-Type', 'text/csv')
             self.end_headers()
             self.wfile.write(f.read())
             f.close()
         elif self.path == '/out-video.avi':
-            f = open(curdir + self.path, 'rb')
+            f = open(os.curdir + self.path, 'rb')
             self.send_response(200)
             self.send_header('Content-Type', 'video/x-msvideo')
             self.end_headers()
@@ -95,6 +104,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
         global frame_id
         global angle
         global ts
+        global use_dnn
         if self.path == '/actuate':
             self.send_response(301)
             self.end_headers()
@@ -161,8 +171,62 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                     vidfile.write(frame)
                     print ("%.3f %d %.3f %d(ms)" %
                     (ts, frame_id, angle, int((time.time() - ts)*1000)))
+        if self.path == '/upload':
+            filename = "large-200x66x3.tflite"
+            file_length = int(self.headers['Content-Length'])
+            read = 0
+            with open(filename, 'wb+') as output_file:
+                output_file.write(self.rfile.read(file_length))
+            self.send_response(201, 'Created')
+            self.end_headers()
+            reply_body = 'Saved "%s"\n' % filename
+            self.wfile.write(reply_body.encode('utf-8'))
 
-            
+        if self.path == '/dnn':
+            self.send_response(301)
+            self.end_headers()
+            self.data_string = self.rfile.read(int(self.headers['Content-Length']))
+
+            data = json.loads(self.data_string)
+            print (data)
+
+            if data['params']['action'] == 'start':
+                use_dnn = True
+            if data['params']['action'] == 'stop':
+                use_dnn = False
+            try:
+                # Import TFLite interpreter from tflite_runtime package if it's available.
+                from tflite_runtime.interpreter import Interpreter
+                interpreter = Interpreter('large-200x66x3.tflite', num_threads=2)
+            except ImportError:
+                # If not, fallback to use the TFLite interpreter from the full TF package.
+                import tensorflow as tf
+                interpreter = tf.lite.Interpreter(model_path='large-200x66x3.tflite', num_threads=2)
+
+            interpreter.allocate_tensors()
+            input_index = interpreter.get_input_details()[0]["index"]
+            output_index = interpreter.get_output_details()[0]["index"]
+
+            while use_dnn == True:
+                # 1. machine input
+                img = preprocess(frame)
+                img = np.expand_dims(img, axis=0).astype(np.float32)
+                interpreter.set_tensor(input_index, img)
+                interpreter.invoke()
+                angle = interpreter.get_tensor(output_index)[0][0]
+                degree = rad2deg(angle)
+                if degree <= -15:
+                    actuator.left()
+                    print ("left (CPU)")
+                elif degree < 15 and degree > -15:
+                    actuator.center()
+                    print ("center (CPU)")
+                elif degree >= 15:
+                    actuator.right()
+                    print ("right (CPU)")
+
+
+
 
 class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
     allow_reuse_address = True
@@ -175,6 +239,7 @@ if __name__ == "__main__":
     frame_id = 0
     angle = 0.0
     ts = time.time()
+    use_dnn = False
 
     try:
         address = ('', 8000)
