@@ -11,7 +11,7 @@ DAVE-2 and can drive itself in real-time locally on a Raspberry Pi.
 Install DeepPicar.
 
     $ sudo apt install libatlas-base-dev
-    $ git clone --depth=1 https://github.com/heechul/DeepPicar-v3 -b devel
+    $ git clone --depth=1 https://github.com/CSL-KU/DeepPicar-v3 -b devel
     $ cd DeepPicar-v3 
     $ sudo pip3 install -r requirements.txt
 
