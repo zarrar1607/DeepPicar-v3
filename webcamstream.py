@@ -31,10 +31,6 @@ def rad2deg(rad):
 
 def preprocess(img):
     img = cv2.resize(img, (200, 66))
-    # Convert to grayscale and readd channel dimension
-    if params.img_channels == 1:
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        img = np.reshape(img, (66, 200, 3))
     img = img / 255.
     return img
 
