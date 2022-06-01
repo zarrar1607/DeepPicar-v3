@@ -35,43 +35,36 @@ Also install the python package "inputs" if you would like to to use Logitech F7
     
 ## Manual control and Data collection
 
-With keyboard:
+To start the backend server
 
-    $ sudo python3 deeppicar.py
+    $ sudo python3 webcamstream.py
 
-Or with gamepad:
+To start the web client
 
-    $ sudo python3 deeppicar.py --gamepad
+    $ npx serve web/dist
 
-The key commands for controlling the DeepPicar with keyboard are as follows:
+Using the web client, you can control the car, record and download data, upload the model, and run the DNN
 
-* **'a'**: move forward 
-* **'z'**: move backward
-* **'s'**: stop
-* **'j'**: turn left
-* **'l'**: turn right 
-* **'k'**: center
-* **'r'**: toggle recording
-* **'d'**: toggle autonomous driving
-* **'q'**: quit
+Keyboard controls
+* **'UpArrow'**: move forward 
+* **'DownArrow'**: move backward
+* **'Space'**: stop
+* **'LeftArrow'**: turn left
+* **'RightArrow'**: turn right 
 
 Use the keys to manually control the car. Once you become confident in controlling the car, collect the data to be used for training the DNN model. 
 
-The data collection can be enabled and stopped by pressing `r` key. Once recording is enabled, the video feed and the corresponding control inputs are stored in `out-video.avi` and `out-key.csv` files, respectively. Later, we will use these files for training. 
+The data collection can be enabled and stopped by pressing `Finish` button. Once recording is enabled, the video feed and the corresponding control inputs are stored in `out-video.avi` and `out-key.csv` files, respectively. Later, we will use these files for training. It can be downloaded with the download button.
+
+Each recording attempt with overwrite the previous
 
 Rename recorded avi and csv files to out-video-XX.avi and out-video-XX.csv where XX with appropriate numbers. 
 
-Compress all the recorded files into a single zip file, say Dataset.zip, and copy the file to the host PC. 
+Compress all the recorded files into a single zip file, say Dataset.zip for Colab.
 
     $ zip Dataset.zip out-*
     updating: out-key.csv (deflated 81%)
     updating: out-video.avi (deflated 3%)
-
-Move the dataset to your PC. 
-
-    $ python3 -m http.server
-
-On your PC, use your browser to download the dataset file by entering `https://<ip_addr_of_your_pi>:8000/Dataset.zip`
 
 ## Train the model
     
@@ -79,24 +72,13 @@ Open the colab notebook. Following the notebook, you will upload the dataset to 
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/CSL-KU/DeepPicar-v3/blob/devel/RunAll.ipynb)
 
-After you are done trainig, you need to copy the trained tflite model file (`large-200x66x3.tflite` by default) to the Pi as follow (alternative, you can simply copy the file via `scp` instead). 
-
-    $ python3 -m uploadserver --directory models/
-
-On your PC, use your browser to upload the tflite model file to the Pi. 
-On the browser URL bar, enter `https://<ip_addr_of_your_pi>:8000/upload`. 
-Then, select the downloaded tflite file via `Browse...` and click `Submit Query` to upload the file.
+After you are done trainig, you need to copy the trained tflite model file (`large-200x66x3.tflite` by default) to the Pi using the web uploader
 
 ## Autonomous control
 
 Copy the trained model to the DeepPicar. 
 
-Enable autonomous driving by suppling `-d` command line argument as below. 
-
-    $ sudo python3 deeppicar-kbd.py -d 
-
-You can start/stop autonomous driving by pressing `d` key while running the program. 
-Note that you still need to initiate a forward movement by pressing `a` because the DNN only controls steering.  
+Enable autonomous driving through the `Start DNN` button.
 
 ## Driving Videos
 
