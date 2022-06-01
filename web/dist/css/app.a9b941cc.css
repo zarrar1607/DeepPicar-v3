@@ -1,3 +1,5 @@
+.unselectable{-webkit-user-select:none;-webkit-touch-callout:none;-moz-user-select:none;user-select:none}
+
 /*!
  * * Quasar Framework v2.7.1
  * * (c) 2015-present Razvan Stoenescu
