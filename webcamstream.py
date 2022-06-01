@@ -43,7 +43,6 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
     def do_GET(self):
-        global frame
         if self.path == '/':
             self.send_response(301)
             self.send_header('Location', '/index.html')
@@ -95,7 +94,6 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.end_headers()
 
     def do_POST(self):
-        global frame
         global enable_record
         global frame_id
         global angle
@@ -155,19 +153,18 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                         fourcc = cv2.VideoWriter_fourcc(*'XVID')
                     vidfile = cv2.VideoWriter("out-video.avi", fourcc,
                                             30, (320, 240))
-                if frame is not None:
-                    # increase frame_id
-                    frame_id += 1
+                frame = camera.read_frame()
+                # increase frame_id
+                frame_id += 1
 
-                    # write input (angle)
-                    str = "{},{},{}\n".format(int(ts*1000), frame_id, angle)
-                    keyfile.write(str)
+                # write input (angle)
+                str = "{},{},{}\n".format(int(ts*1000), frame_id, angle)
+                keyfile.write(str)
 
-                    # write video stream
-                    frame = camera.read_frame()
-                    vidfile.write(frame)
-                    print ("%.3f %d %.3f %d(ms)" %
-                    (ts, frame_id, angle, int((time.time() - ts)*1000)))
+                # write video stream
+                vidfile.write(frame)
+                print ("%.3f %d %.3f %d(ms)" %
+                (ts, frame_id, angle, int((time.time() - ts)*1000)))
         if self.path == '/upload':
             filename = "large-200x66x3.tflite"
             file_length = int(self.headers['Content-Length'])
@@ -206,6 +203,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
 
             while use_dnn == True:
                 # 1. machine input
+                frame = camera.read_frame()
                 img = preprocess(frame)
                 img = np.expand_dims(img, axis=0).astype(np.float32)
                 interpreter.set_tensor(input_index, img)
