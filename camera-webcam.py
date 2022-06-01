@@ -3,9 +3,10 @@ from threading import Thread,Lock
 import time
 
 use_thread = False
-need_flip = False
+need_flip = True
 cap = None
 frame = None
+lock=Lock()
 
 # public API
 # init(), read_frame(), stop()
@@ -34,20 +35,30 @@ def init(res=(320, 240), fps=30, threading=True):
 
 def __update():
     global frame
+    global lock
     while use_thread:
         ret, tmp_frame = cap.read() # blocking read
         if need_flip == True:
-            frame = cv2.flip(tmp_frame, -1)
+            frame_ = cv2.flip(tmp_frame, -1)
         else:
-            frame = tmp_frame
+            frame_ = tmp_frame
+        lock.acquire()
+        frame=frame_
+        lock.release()
     print ("Camera thread finished...")
     cap.release()        
 
 def read_frame():
     global frame
+    global lock
     if not use_thread:
        ret, frame = cap.read() # blocking read
-    return frame
+       return frame
+    else:
+        lock.acquire()
+        frame_=frame
+        lock.release()
+        return frame_
 
 def stop():
     global use_thread
