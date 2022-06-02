@@ -13,17 +13,6 @@ import math
 import numpy as np
 
 
-PAGE="""\
-<html>
-<head>
-<title>WebCam MJPEG streaming</title>
-</head>
-<body>
-<h1>PiCamera MJPEG Streaming Demo</h1>
-<img src="stream.mjpg" width="320" height="240" />
-</body>
-</html>
-"""
 def deg2rad(deg):
     return deg * math.pi / 180.0
 def rad2deg(rad):
@@ -47,13 +36,6 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.send_response(301)
             self.send_header('Location', '/index.html')
             self.end_headers()
-        elif self.path == '/index.html':
-            content = PAGE.encode('utf-8')
-            self.send_response(200)
-            self.send_header('Content-Type', 'text/html')
-            self.send_header('Content-Length', len(content))
-            self.end_headers()
-            self.wfile.write(content)
         elif self.path == '/stream.mjpg':
             self.send_response(200)
             self.send_header('Age', 0)
@@ -106,6 +88,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
 
             data = json.loads(self.data_string)
             print (data)
+            actuator.set_speed(data['params']['speed'])
             if data['params']['direction'] == 'left':
                 angle = deg2rad(-30)
                 print("left")
