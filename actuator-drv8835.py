@@ -31,10 +31,12 @@ def rew():
 # steering
 def center():
     motors.motor1.setSpeed(0)
-def left(speed=MAX_SPEED):
-    motors.motor1.setSpeed(speed)
-def right(speed=-MAX_SPEED):
-    motors.motor1.setSpeed(speed)
+
+def left(speed=-1):
+    motors.motor1.setSpeed(int(speed*MAX_SPEED))
+
+def right(speed=1):
+    motors.motor1.setSpeed(int(speed*MAX_SPEED))
 
 # exit    
 def turn_off():

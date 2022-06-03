@@ -12,7 +12,8 @@ import array
 from multiprocessing import Process, Lock, Array
 
 from PIL import Image, ImageDraw
-import input_kbd
+#import input_kbd
+import input_stream
 
 ##########################################################
 # import deeppicar's sensor/actuator modules
@@ -24,11 +25,11 @@ actuator = __import__(params.actuator)
 # global variable initialization
 ##########################################################
 use_dnn = False
-use_gamepad = False
 use_thread = True
 view_video = False
 fpv_video = False
 enable_record = False
+inp_stream= None
 
 cfg_cam_res = (320, 240)
 cfg_cam_fps = 30
@@ -38,66 +39,13 @@ frame_id = 0
 angle = 0.0
 period = 0.05 # sec (=50ms)
 
-
 ##########################################################
 # local functions
 ##########################################################
-def inputs_process(shr_js_state, lock):    
-    import inputs
-
-    pads = inputs.devices.gamepads
-    if len(pads) == 0:
-        raise Exception("Couldn't find any Gamepads!")
-
-    # Empty buffer
-    js_events = inputs.get_gamepad()
-    print('Joystick is ready')
-
-    finish=False
-    disable_joystick=False
-    while not finish:
-        js_events = inputs.get_gamepad()
-        if disable_joystick and time.time() - js_disable_time > 0.3: # 300 ms
-            disable_joystick = False
-        lock.acquire()
-        for event in js_events:
-            if not disable_joystick and event.ev_type == 'Absolute' and event.code == 'ABS_X':
-                val = int(event.state)
-                if val <= -256 or val >= 256: # calib, dead area
-                    shr_js_state[0] = val #/ -32768 to 32767
-            elif event.ev_type == 'Absolute' and event.code == 'ABS_HAT0Y':
-                if int(event.state) == -1:
-                    shr_js_state[1]=1.
-                elif int(event.state) == 1:
-                    shr_js_state[2]=1.
-            elif event.ev_type == 'Absolute' and event.code == 'ABS_HAT0X':
-                if int(event.state) == -1:
-                    shr_js_state[0]=-32768.
-                elif int(event.state) == 1:
-                    shr_js_state[0]=32767.
-                elif int(event.state) == 0:
-                    shr_js_state[0]=0.
-            elif event.ev_type == 'Key' and event.code == 'BTN_NORTH' and int(event.state) == 1:
-                shr_js_state[3]=1. # stop
-            elif event.ev_type == 'Key' and event.code == 'BTN_EAST' and int(event.state) == 1:
-                shr_js_state[4]=1. # record
-            elif event.ev_type == 'Key' and event.code == 'BTN_START' and int(event.state) == 1:
-                shr_js_state[5]=1.
-            elif event.ev_type == 'Key' and event.code == 'BTN_SELECT':
-                shr_js_state[6]=1.
-                finish=True
-            elif event.ev_type == 'Key' and event.code == 'BTN_WEST' and int(event.state) == 1:
-                shr_js_state[7]=1.
-            elif event.ev_type == 'Key' and event.code == 'BTN_SOUTH' and int(event.state) == 1:
-                shr_js_state[0]=0.
-                disable_joystick=True
-                js_disable_time = time.time()
-        #if shr_js_state[0] < 32768//2 and shr_js_state[0] > -32768//2:
-        #    shr_js_state[0] = 0. # dead area
-        lock.release()
 
 def deg2rad(deg):
     return deg * math.pi / 180.0
+
 def rad2deg(rad):
     return 180.0 * rad / math.pi
 
@@ -164,11 +112,9 @@ if args.fpvvideo:
     fpv_video = True
     print("FPV video of DNN driving is on")
 if args.gamepad:
-    use_gamepad = True
-    shared_js_state = Array('d', [0.]*8) # joystick pos and other buttons
-    lock=Lock()
-    js_process = Process(target=inputs_process, args=(shared_js_state, lock,))
-    js_process.start()
+    inp_stream= input_stream.input_gamepad()
+else:
+    inp_stream= input_stream.input_kbd()
 
 ##########################################################
 # import deeppicar's DNN model
@@ -204,90 +150,45 @@ while True:
     frame = camera.read_frame()
     ts = time.time()
 
-    if view_video == True:
+    if view_video:
         cv2.imshow('frame', frame)
-
-    if use_gamepad:
-        lock.acquire()
-        if shared_js_state[1] == 1.:
-            shared_js_state[1] = 0.
-            actuator.ffw()
-            print ("accel")
-        elif shared_js_state[2] == 1.:
-            shared_js_state[2] = 0.
-            actuator.rew()
-            print ("reverse")
-        elif shared_js_state[3] == 1.:
-            shared_js_state[3] = 0.
-            actuator.stop()
-            print ("stop")
-        elif shared_js_state[4] == 1.:
-            shared_js_state[4] = 0.
-            print ("toggle record mode")
-            enable_record = not enable_record
-        elif shared_js_state[5] == 1.:
-            shared_js_state[5] = 0.
-            print ("toggle DNN mode")
-            use_dnn = not use_dnn
-        elif shared_js_state[6] == 1.:
-            shared_js_state[6] = 0.
-            break
-        elif shared_js_state[7] == 1.:
-            shared_js_state[7] = 0.
-            print ("toggle video mode")
-            view_video = not view_video
-
-        if not use_dnn:
-            js_angle = shared_js_state[0] / 32768
-            js_speed = -int(js_angle * actuator.get_max_speed())
-            if js_speed == 0.:
-                actuator.center()
-            elif js_speed > 0:
-                actuator.right(js_speed)
-            else:
-                actuator.left(js_speed)
-            angle = deg2rad(js_angle * 30)
-
-        lock.release()
-
+        ch = cv2.waitKey(1) & 0xFF
     else:
-        if view_video == True:
-            ch = cv2.waitKey(1) & 0xFF
-        else:
-            ch = ord(input_kbd.read_single_keypress())
+        command, direction = inp_stream.read_inp()
 
-        if not use_dnn and ch == ord('j'): # left 
-            angle = deg2rad(-30)
-            actuator.left()
-            print ("left")
-        elif not use_dnn and ch == ord('k'): # center 
-            angle = deg2rad(0)
-            actuator.center()
-            print ("center")
-        elif not use_dnn and ch == ord('l'): # right
-            angle = deg2rad(30)
-            actuator.right()
-            print ("right")
-        elif ch == ord('a'):
-            actuator.ffw()
-            print ("accel")
-        elif ch == ord('s'):
-            actuator.stop()
-            print ("stop")
-        elif ch == ord('z'):
-            actuator.rew()
-            print ("reverse")
-        elif ch == ord('r'):
-            print ("toggle record mode")
-            enable_record = not enable_record
-        elif ch == ord('t'):
-            print ("toggle video mode")
-            view_video = not view_video
-        elif ch == ord('d'):
-            print ("toggle DNN mode")
-            use_dnn = not use_dnn
-        elif ch == ord('q'):
-            break
+    if direction < 0:
+        angle = deg2rad(direction * 30)
+        actuator.left(direction)
+        print ("left")
+    elif direction > 0:
+        angle = deg2rad(direction * 30)
+        actuator.right(direction)
+        print ("right")
+    else:
+        angle=0.
+        actuator.center()
+        print ("center")
+
+    if command == 'a':
+        actuator.ffw()
+        print ("accel")
+    elif command == 's':
+        actuator.stop()
+        print ("stop")
+    elif command == 'z':
+        actuator.rew()
+        print ("reverse")
+    elif command == 'r':
+        print ("toggle record mode")
+        enable_record = not enable_record
+    elif command == 't':
+        print ("toggle video mode")
+        view_video = not view_video
+    elif command == 'd':
+        print ("toggle DNN mode")
+        use_dnn = not use_dnn
+    elif command == 'q':
+        break
 
     if use_dnn:
         # 1. machine input

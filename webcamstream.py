@@ -12,6 +12,8 @@ import time
 import math
 import numpy as np
 
+last_dir=0
+car_moving=False
 
 def deg2rad(deg):
     return deg * math.pi / 180.0
@@ -36,6 +38,13 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.send_response(301)
             self.send_header('Location', '/index.html')
             self.end_headers()
+#        elif self.path == '/index.html':
+#            content = PAGE.encode('utf-8')
+#            self.send_response(200)
+#            self.send_header('Content-Type', 'text/html')
+#            self.send_header('Content-Length', len(content))
+#            self.end_headers()
+#            self.wfile.write(content)
         elif self.path == '/stream.mjpg':
             self.send_response(200)
             self.send_header('Age', 0)
@@ -53,6 +62,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                     self.end_headers()
                     self.wfile.write(frame)
                     self.wfile.write(b'\r\n')
+                    #TODO disable this or set delay to match 30 FPS
             except Exception as e:
                 logging.warning(
                     'Removed streaming client %s: %s',
@@ -81,6 +91,8 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
         global angle
         global ts
         global use_dnn
+        global last_dir
+        global car_moving
         if self.path == '/actuate':
             self.send_response(301)
             self.end_headers()
@@ -93,23 +105,34 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                 angle = deg2rad(-30)
                 print("left")
                 actuator.left()
+                last_dir=-1
             if data['params']['direction'] == 'center':
                 angle = deg2rad(0)
                 print("center")
+                if last_dir == 1:
+                    actuator.left()
+                elif last_dir == -1:
+                    actuator.right()
+                time.sleep(0.02)
                 actuator.center()
+                last_dir=0
             if data['params']['direction'] == 'right':
                 angle = deg2rad(30)
                 print("right")
                 actuator.right()
+                last_dir=1
             if data['params']['direction'] == 'forward':
                 print ("accel")
                 actuator.ffw()
+                car_moving=True
             if data['params']['direction'] == 'stop':
                 print ("stop")
                 actuator.stop()
+                car_moving=False
             if data['params']['direction'] == 'reverse':
                 print ("reverse")
                 actuator.rew()
+                car_moving=True
         if self.path == '/record':
             self.send_response(301)
             self.end_headers()
@@ -121,10 +144,12 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             if data['params']['action'] == 'begin':
                 enable_record = True
             if data['params']['action'] == 'finish':
-                
                 enable_record = False
                 frame_id = 0
-            
+
+            fps=30
+            period = 1./fps
+            end_time = time.time() + period
             while enable_record == True:
                 if frame_id == 0:
                     # create files for data recording
@@ -135,19 +160,24 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                     except AttributeError as e:
                         fourcc = cv2.VideoWriter_fourcc(*'XVID')
                     vidfile = cv2.VideoWriter("out-video.avi", fourcc,
-                                            30, (320, 240))
+                                            fps, (320, 240))
                 frame = camera.read_frame()
                 # increase frame_id
                 frame_id += 1
 
                 # write input (angle)
-                str = "{},{},{}\n".format(int(ts*1000), frame_id, angle)
-                keyfile.write(str)
+                str_all = "{},{},{}\n".format(int(ts*1000), frame_id, angle)
+                keyfile.write(str_all)
 
                 # write video stream
                 vidfile.write(frame)
-                print ("%.3f %d %.3f %d(ms)" %
-                (ts, frame_id, angle, int((time.time() - ts)*1000)))
+                tdiff = end_time - time.time()
+                if tdiff > 0:
+                    time.sleep(tdiff)
+                end_time += period
+
+                #print ("%.3f %d %.3f %d(ms)" %
+                #        (ts, frame_id, angle, int((time.time() - ts)*1000)))
         if self.path == '/upload':
             filename = "large-200x66x3.tflite"
             file_length = int(self.headers['Content-Length'])
@@ -195,16 +225,21 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                 degree = rad2deg(angle)
                 if degree <= -15:
                     actuator.left()
+                    last_dir=-1
                     print ("left (CPU)")
                 elif degree < 15 and degree > -15:
-                    actuator.center()
+                    if last_dir == 1:
+                        actuator.left()
+                    elif last_dir == -1:
+                        actuator.right()
+                    else:
+                        actuator.center()
+                    last_dir = 0
                     print ("center (CPU)")
                 elif degree >= 15:
                     actuator.right()
+                    last_dir=1
                     print ("right (CPU)")
-
-
-
 
 class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
     allow_reuse_address = True
