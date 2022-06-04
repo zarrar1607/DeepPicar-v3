@@ -114,11 +114,11 @@ if args.fpvvideo:
     fpv_video = True
     print("FPV video of DNN driving is on")
 if args.gamepad:
-    inp_stream= input_stream.input_gamepad()
+    inp_stream= input_stream.input_gamepad(cfg_throttle)
 elif args.web:
-    inp_stream= input_stream.input_web()
+    inp_stream= input_stream.input_web(cfg_throttle)
 else:
-    inp_stream= input_stream.input_kbd()
+    inp_stream= input_stream.input_kbd(cfg_throttle)
 
 ##########################################################
 # import deeppicar's DNN model

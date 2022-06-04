@@ -11,6 +11,8 @@ from multiprocessing import Process, Lock, Array, Value
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from functools import partial
 import json
+import params
+camera   = __import__(params.camera)
 
 class input_stream:
     def __init__(self, speed=50):
@@ -28,8 +30,10 @@ class input_stream:
         self.stop()
 
 class input_kbd(input_stream):
+    def __init__(self, speed=50):
+        super().__init__(speed)
+
     def init(self):
-        super().__init__()
         fd = sys.stdin.fileno()
         # save old state
         flags_save = fcntl.fcntl(fd, fcntl.F_GETFL)
@@ -81,8 +85,8 @@ class input_kbd(input_stream):
 
 
 class input_gamepad(input_stream):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, speed=50):
+        super().__init__(speed)
         self.shared_arr = Array('d', [0.]*8) # joystick pos and other buttons and finish state
         #self.finish = Value('i', 1)
         self.lock=Lock()
@@ -205,35 +209,35 @@ class input_web_handler(BaseHTTPRequestHandler):
             self.send_response(301)
             self.send_header('Location', '/index.html')
             self.end_headers()
-        elif self.path == '/stream.mjpg':
-            self.send_response(200)
-            self.send_header('Age', 0)
-            self.send_header('Cache-Control', 'no-cache, private')
-            self.send_header('Pragma', 'no-cache')
-            self.send_header('Content-Type', 'multipart/x-mixed-replace; boundary=FRAME')
-            self.end_headers()
-            #fps=30
-            #period = 1./fps
-            #end_time = time.time() + period
-            try:
-                #while True:
-                frame = camera.read_frame()
-                ret, frame = cv2.imencode('.jpg', frame)
-                self.wfile.write(b'--FRAME\r\n')
-                self.send_header('Content-Type', 'image/jpeg')
-                self.send_header('Content-Length', len(frame))
-                self.end_headers()
-                self.wfile.write(frame)
-                self.wfile.write(b'\r\n')
-
-                    #tdiff = end_time - time.time()
-                    #if tdiff > 0:
-                    #    time.sleep(tdiff)
-                    #end_time += period
-            except Exception as e:
-                logging.warning(
-                    'Removed streaming client %s: %s',
-                    self.client_address, str(e))
+#        elif self.path == '/stream.mjpg':
+#            self.send_response(200)
+#            self.send_header('Age', 0)
+#            self.send_header('Cache-Control', 'no-cache, private')
+#            self.send_header('Pragma', 'no-cache')
+#            self.send_header('Content-Type', 'multipart/x-mixed-replace; boundary=FRAME')
+#            self.end_headers()
+#            #fps=30
+#            #period = 1./fps
+#            #end_time = time.time() + period
+#            try:
+#                #while True:
+#                frame = camera.read_frame()
+#                ret, frame = cv2.imencode('.jpg', frame)
+#                self.wfile.write(b'--FRAME\r\n')
+#                self.send_header('Content-Type', 'image/jpeg')
+#                self.send_header('Content-Length', len(frame))
+#                self.end_headers()
+#                self.wfile.write(frame)
+#                self.wfile.write(b'\r\n')
+#
+#                    #tdiff = end_time - time.time()
+#                    #if tdiff > 0:
+#                    #    time.sleep(tdiff)
+#                    #end_time += period
+#            except Exception as e:
+#                logging.warning(
+#                    'Removed streaming client %s: %s',
+#                    self.client_address, str(e))
         elif self.path == '/out-key.csv':
             f = open(os.curdir + self.path, 'rb')
             self.send_response(200)
@@ -273,7 +277,7 @@ class input_web_handler(BaseHTTPRequestHandler):
             elif data['params']['direction'] == 'reverse':
                 self.shared_arr[2] = 1.
 
-            self.shared_arr[8] = data['params']['speed']
+            self.shared_arr[8] = float(data['params']['speed'])
             #actuator.set_speed(data['params']['speed'])
         elif self.path == '/record':
             self.send_response(301)
@@ -319,7 +323,8 @@ class input_web_handler(BaseHTTPRequestHandler):
 
 # this takes the p
 class input_web(input_stream):
-    def __init__(self):
+    def __init__(self, speed=50):
+        super().__init__(speed)
         self.shared_arr = Array('d', [0.]*9) # joystick pos and other buttons and finish state
         self.lock = Lock()
 
