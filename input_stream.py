@@ -8,11 +8,14 @@ import select
 from multiprocessing import Process, Lock, Array, Value
 
 # WEB INPUT
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from functools import partial
 import json
-import params
-camera   = __import__(params.camera)
+
+#import cv2
+#import logging
+#import params
+#camera   = __import__(params.camera)
 
 class input_stream:
     def __init__(self, speed=50):
@@ -86,13 +89,13 @@ class input_kbd(input_stream):
 
 class input_gamepad(input_stream):
     def __init__(self, speed=50):
-        super().__init__(speed)
         self.shared_arr = Array('d', [0.]*8) # joystick pos and other buttons and finish state
         #self.finish = Value('i', 1)
         self.lock=Lock()
         self.gamepad_process = Process(target=self.inputs_process, \
                 args=(), daemon=True )#args=(self.shared_arr, self.finish, lock,))
         self.gamepad_process.start()
+        super().__init__(speed)
 
     def inputs_process(self): #shr_gamepad_state, finish, lock):
         import inputs
@@ -194,6 +197,9 @@ class input_web_handler(BaseHTTPRequestHandler):
     def __init__(self, shared_arr, lock, *args, **kwargs):
         self.shared_arr = shared_arr
         self.lock = lock
+        #cfg_cam_res = (320, 240)
+        #self.cfg_cam_fps = 20
+        #camera.init(res=cfg_cam_res, fps=self.cfg_cam_fps, threading=True)
         super().__init__(*args, **kwargs)
 
     def do_OPTIONS(self):
@@ -216,24 +222,23 @@ class input_web_handler(BaseHTTPRequestHandler):
 #            self.send_header('Pragma', 'no-cache')
 #            self.send_header('Content-Type', 'multipart/x-mixed-replace; boundary=FRAME')
 #            self.end_headers()
-#            #fps=30
-#            #period = 1./fps
-#            #end_time = time.time() + period
+#            period = 1./self.cfg_cam_fps
+#            end_time = time.time() + period
 #            try:
-#                #while True:
-#                frame = camera.read_frame()
-#                ret, frame = cv2.imencode('.jpg', frame)
-#                self.wfile.write(b'--FRAME\r\n')
-#                self.send_header('Content-Type', 'image/jpeg')
-#                self.send_header('Content-Length', len(frame))
-#                self.end_headers()
-#                self.wfile.write(frame)
-#                self.wfile.write(b'\r\n')
+#                while True:
+#                    frame = camera.read_frame()
+#                    ret, frame = cv2.imencode('.jpg', frame)
+#                    self.wfile.write(b'--FRAME\r\n')
+#                    self.send_header('Content-Type', 'image/jpeg')
+#                    self.send_header('Content-Length', len(frame))
+#                    self.end_headers()
+#                    self.wfile.write(frame)
+#                    self.wfile.write(b'\r\n')
 #
-#                    #tdiff = end_time - time.time()
-#                    #if tdiff > 0:
-#                    #    time.sleep(tdiff)
-#                    #end_time += period
+#                    tdiff = end_time - time.time()
+#                    if tdiff > 0:
+#                        time.sleep(tdiff)
+#                    end_time += period
 #            except Exception as e:
 #                logging.warning(
 #                    'Removed streaming client %s: %s',
@@ -263,7 +268,7 @@ class input_web_handler(BaseHTTPRequestHandler):
             self.data_string = self.rfile.read(int(self.headers['Content-Length']))
 
             data = json.loads(self.data_string)
-            print (data)
+            self.lock.acquire()
             if data['params']['direction'] == 'left':
                 self.shared_arr[0] = -1.
             elif data['params']['direction'] == 'center':
@@ -278,6 +283,7 @@ class input_web_handler(BaseHTTPRequestHandler):
                 self.shared_arr[2] = 1.
 
             self.shared_arr[8] = float(data['params']['speed'])
+            self.lock.release()
             #actuator.set_speed(data['params']['speed'])
         elif self.path == '/record':
             self.send_response(301)
@@ -285,9 +291,10 @@ class input_web_handler(BaseHTTPRequestHandler):
             self.data_string = self.rfile.read(int(self.headers['Content-Length']))
 
             data = json.loads(self.data_string)
-            print (data)
 
+            self.lock.acquire()
             self.shared_arr[4] = 1. 
+            self.lock.release()
 
             #if data['params']['action'] == 'begin':
             #    enable_record = True
@@ -312,9 +319,10 @@ class input_web_handler(BaseHTTPRequestHandler):
             self.data_string = self.rfile.read(int(self.headers['Content-Length']))
 
             data = json.loads(self.data_string)
-            print (data)
 
+            self.lock.acquire()
             self.shared_arr[5] = 1. 
+            self.lock.release()
             #if data['params']['action'] == 'start':
             #    use_dnn = True
             #if data['params']['action'] == 'stop':
@@ -324,19 +332,24 @@ class input_web_handler(BaseHTTPRequestHandler):
 # this takes the p
 class input_web(input_stream):
     def __init__(self, speed=50):
-        super().__init__(speed)
         self.shared_arr = Array('d', [0.]*9) # joystick pos and other buttons and finish state
         self.lock = Lock()
 
         self.ws_process = Process(target=self.web_server_process, \
                 args=(), daemon=True )
         self.ws_process.start()
+        super().__init__(speed)
 
     def web_server_process(self):
-        address = ('', 8000)
+        address = ('', 8000) # backend - frontend connection
         handler = partial(input_web_handler, self.shared_arr, self.lock)
-        server = HTTPServer(address, handler)
-        server.serve_forever() # until terminated
+        #server = HTTPServer(address, handler)
+        server = ThreadingHTTPServer(address, handler)
+        try:
+            server.serve_forever() # until terminated
+        except KeyboardInterrupt:
+            pass
+        server.server_close()
 
     def read_inp(self):
         self.buffer = ' '

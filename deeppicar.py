@@ -32,7 +32,7 @@ enable_record = False
 inp_stream= None
 
 cfg_cam_res = (320, 240)
-cfg_cam_fps = 30
+cfg_cam_fps = 20
 cfg_throttle = 50 # 50% power.
 
 frame_id = 0
@@ -60,9 +60,9 @@ def turn_off():
     actuator.stop()
     camera.stop()
     inp_stream.stop()
-    if frame_id > 0:
-        keyfile.close()
-        vidfile.release()
+    #if frame_id > 0:
+    keyfile.close()
+    vidfile.release()
 
 def preprocess(img):
     img = cv2.resize(img, (params.img_width, params.img_height))
@@ -173,6 +173,10 @@ while True:
         print ("reverse")
     elif command == 'r':
         print ("toggle record mode")
+        if enable_record:
+            keyfile.close()
+            vidfile.release()
+            frame_id= 0
         enable_record = not enable_record
     elif command == 't':
         print ("toggle video mode")
@@ -190,14 +194,13 @@ while True:
         interpreter.set_tensor(input_index, img)
         interpreter.invoke()
         angle = interpreter.get_tensor(output_index)[0][0]
-        degree = rad2deg(angle)
-        if degree <= -15:
+        if angle < 0.5:
             actuator.left()
             print ("left (CPU)")
-        elif degree < 15 and degree > -15:
+        elif angle >= 0.5 and angle <= 1.5:
             actuator.center()
             print ("center (CPU)")
-        elif degree >= 15:
+        elif angle > 1.5:
             actuator.right()
             print ("right (CPU)")
     else:
@@ -223,7 +226,7 @@ while True:
 
     if enable_record == True and frame_id == 0:
         # create files for data recording
-        keyfile = open(params.rec_csv_file, 'w+')
+        keyfile = open(params.rec_csv_file, 'w')
         keyfile.write("ts_micro,frame,wheel\n")
         try:
             fourcc = cv2.cv.CV_FOURCC(*'XVID')
@@ -254,9 +257,9 @@ while True:
         vidfile.write(frame)
         #img_name = "cal_images/opencv_frame_{}.png".format(frame_id)
         #cv2.imwrite(img_name, frame)
-        if frame_id >= 1000:
-            print ("recorded 1000 frames")
-            break
+        #if frame_id >= 1000:
+        #    print ("recorded 1000 frames")
+        #    break
         print ("%.3f %d %.3f %d(ms)" %
            (ts, frame_id, angle, int((time.time() - ts)*1000)))
 
