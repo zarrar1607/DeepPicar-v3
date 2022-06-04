@@ -10,6 +10,7 @@ import params
 import argparse
 import array
 from multiprocessing import Process, Lock, Array
+from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 
 from PIL import Image, ImageDraw
 #import input_kbd
@@ -39,6 +40,105 @@ frame_id = 0
 angle = 0.0
 period = 0.05 # sec (=50ms)
 
+# Web stream and file handling
+class stream_handler(BaseHTTPRequestHandler):
+    global cfg_cam_fps
+    global interpreter
+    def do_OPTIONS(self):
+        self.send_response(200, "ok")
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS, POST')
+        self.send_header("Access-Control-Allow-Headers", "X-Requested-With")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
+
+    def do_GET(self):
+        if self.path == '/':
+            self.send_response(301)
+            self.send_header('Location', '/index.html')
+            self.end_headers()
+        elif self.path == '/stream.mjpg':
+            self.send_response(200)
+            self.send_header('Age', 0)
+            self.send_header('Cache-Control', 'no-cache, private')
+            self.send_header('Pragma', 'no-cache')
+            self.send_header('Content-Type', 'multipart/x-mixed-replace; boundary=FRAME')
+            self.end_headers()
+            period = 1./cfg_cam_fps
+            end_time = time.time() + period
+            try:
+                while True:
+                    frame = camera.read_frame()
+                    ret, frame = cv2.imencode('.jpg', frame)
+                    self.wfile.write(b'--FRAME\r\n')
+                    self.send_header('Content-Type', 'image/jpeg')
+                    self.send_header('Content-Length', len(frame))
+                    self.end_headers()
+                    self.wfile.write(frame)
+                    self.wfile.write(b'\r\n')
+
+                    tdiff = end_time - time.time()
+                    if tdiff > 0:
+                        time.sleep(tdiff)
+                    end_time += period
+            except Exception as e:
+                logging.warning(
+                    'Removed streaming client %s: %s',
+                    self.client_address, str(e))
+        elif self.path == '/out-key.csv':
+            f = open(os.curdir + self.path, 'rb')
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/csv')
+            self.end_headers()
+            self.wfile.write(f.read())
+            f.close()
+        elif self.path == '/out-video.avi':
+            f = open(os.curdir + self.path, 'rb')
+            self.send_response(200)
+            self.send_header('Content-Type', 'video/x-msvideo')
+            self.end_headers()
+            self.wfile.write(f.read())
+            f.close()
+        else:
+            self.send_error(404)
+            self.end_headers()
+
+    def do_POST(self):
+        if self.path == '/upload':
+            filename = "large-200x66x3.tflite"
+            file_length = int(self.headers['Content-Length'])
+            read = 0
+            with open(filename, 'wb+') as output_file:
+                output_file.write(self.rfile.read(file_length))
+            self.send_response(201, 'Created')
+            self.end_headers()
+            reply_body = 'Saved "%s"\n' % filename
+            self.wfile.write(reply_body.encode('utf-8'))
+        else:
+            self.send_error(404)
+            self.end_headers()
+
+        ##########################################################
+        # import deeppicar's DNN model
+        ##########################################################
+        print ("Loading model: " + params.model_file)
+        try:
+            # Import TFLite interpreter from tflite_runtime package if it's available.
+            from tflite_runtime.interpreter import Interpreter
+            interpreter = Interpreter(params.model_file+'.tflite', num_threads=args.ncpu)
+        except ImportError:
+            # If not, fallback to use the TFLite interpreter from the full TF package.
+            import tensorflow as tf
+            interpreter = tf.lite.Interpreter(model_path=params.model_file+'.tflite', num_threads=args.ncpu)
+
+        interpreter.allocate_tensors()
+        input_index = interpreter.get_input_details()[0]["index"]
+        output_index = interpreter.get_output_details()[0]["index"]
+
+address = ('', 8001)
+server = ThreadingHTTPServer(address, stream_handler)
+server.timeout = 0
+
 ##########################################################
 # local functions
 ##########################################################
@@ -61,8 +161,6 @@ def turn_off():
     camera.stop()
     inp_stream.stop()
     #if frame_id > 0:
-    keyfile.close()
-    vidfile.release()
 
 def preprocess(img):
     img = cv2.resize(img, (params.img_width, params.img_height))
@@ -101,6 +199,7 @@ parser.add_argument("-w", "--web", help="Use webpage based input", action="store
 parser.add_argument("--fpvvideo", help="Take FPV video of DNN driving", action="store_true")
 args = parser.parse_args()
 
+
 if args.dnn:
     print ("DNN is on")
     use_dnn = True
@@ -119,23 +218,6 @@ elif args.web:
     inp_stream= input_stream.input_web(cfg_throttle)
 else:
     inp_stream= input_stream.input_kbd(cfg_throttle)
-
-##########################################################
-# import deeppicar's DNN model
-##########################################################
-print ("Loading model: " + params.model_file)
-try:
-    # Import TFLite interpreter from tflite_runtime package if it's available.
-    from tflite_runtime.interpreter import Interpreter
-    interpreter = Interpreter(params.model_file+'.tflite', num_threads=args.ncpu)
-except ImportError:
-    # If not, fallback to use the TFLite interpreter from the full TF package.
-    import tensorflow as tf
-    interpreter = tf.lite.Interpreter(model_path=params.model_file+'.tflite', num_threads=args.ncpu)
-
-interpreter.allocate_tensors()
-input_index = interpreter.get_input_details()[0]["index"]
-output_index = interpreter.get_output_details()[0]["index"]
 
 # initlaize deeppicar modules
 actuator.init(cfg_throttle)
@@ -263,5 +345,6 @@ while True:
         print ("%.3f %d %.3f %d(ms)" %
            (ts, frame_id, angle, int((time.time() - ts)*1000)))
 
+    server.handle_request()
 print ("Finish..")
 turn_off()

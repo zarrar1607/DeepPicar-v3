@@ -215,48 +215,6 @@ class input_web_handler(BaseHTTPRequestHandler):
             self.send_response(301)
             self.send_header('Location', '/index.html')
             self.end_headers()
-#        elif self.path == '/stream.mjpg':
-#            self.send_response(200)
-#            self.send_header('Age', 0)
-#            self.send_header('Cache-Control', 'no-cache, private')
-#            self.send_header('Pragma', 'no-cache')
-#            self.send_header('Content-Type', 'multipart/x-mixed-replace; boundary=FRAME')
-#            self.end_headers()
-#            period = 1./self.cfg_cam_fps
-#            end_time = time.time() + period
-#            try:
-#                while True:
-#                    frame = camera.read_frame()
-#                    ret, frame = cv2.imencode('.jpg', frame)
-#                    self.wfile.write(b'--FRAME\r\n')
-#                    self.send_header('Content-Type', 'image/jpeg')
-#                    self.send_header('Content-Length', len(frame))
-#                    self.end_headers()
-#                    self.wfile.write(frame)
-#                    self.wfile.write(b'\r\n')
-#
-#                    tdiff = end_time - time.time()
-#                    if tdiff > 0:
-#                        time.sleep(tdiff)
-#                    end_time += period
-#            except Exception as e:
-#                logging.warning(
-#                    'Removed streaming client %s: %s',
-#                    self.client_address, str(e))
-        elif self.path == '/out-key.csv':
-            f = open(os.curdir + self.path, 'rb')
-            self.send_response(200)
-            self.send_header('Content-Type', 'text/csv')
-            self.end_headers()
-            self.wfile.write(f.read())
-            f.close()
-        elif self.path == '/out-video.avi':
-            f = open(os.curdir + self.path, 'rb')
-            self.send_response(200)
-            self.send_header('Content-Type', 'video/x-msvideo')
-            self.end_headers()
-            self.wfile.write(f.read())
-            f.close()
         else:
             self.send_error(404)
             self.end_headers()
@@ -296,22 +254,6 @@ class input_web_handler(BaseHTTPRequestHandler):
             self.shared_arr[4] = 1. 
             self.lock.release()
 
-            #if data['params']['action'] == 'begin':
-            #    enable_record = True
-            #if data['params']['action'] == 'finish':
-            #    enable_record = False
-            #    frame_id = 0
-
-        elif self.path == '/upload':
-            filename = "large-200x66x3.tflite"
-            file_length = int(self.headers['Content-Length'])
-            read = 0
-            with open(filename, 'wb+') as output_file:
-                output_file.write(self.rfile.read(file_length))
-            self.send_response(201, 'Created')
-            self.end_headers()
-            reply_body = 'Saved "%s"\n' % filename
-            self.wfile.write(reply_body.encode('utf-8'))
 
         elif self.path == '/dnn':
             self.send_response(301)
