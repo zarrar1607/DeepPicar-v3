@@ -14,6 +14,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 
 from PIL import Image, ImageDraw
 import input_stream
+import json
 
 ##########################################################
 # import deeppicar's sensor/actuator modules
@@ -67,7 +68,7 @@ class stream_handler(BaseHTTPRequestHandler):
             end_time = time.time() + period
 
             try:
-                while streaming:
+                while stream_handler.streaming:
                     frame = camera.read_frame()
                     ret, frame = cv2.imencode('.jpg', frame)
                     self.wfile.write(b'--FRAME\r\n')
@@ -111,10 +112,8 @@ class stream_handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.data_string = self.rfile.read(int(self.headers['Content-Length']))
             data = json.loads(self.data_string)
-            if data['params']['streaming'] == 'true':
-                streaming = True
-            elif data['params']['streaming'] == 'false':
-                streaming = False
+            print(data)
+            stream_handler.streaming = data['params']['streaming']
         elif self.path == '/upload':
             filename = "large-200x66x3.tflite"
             file_length = int(self.headers['Content-Length'])
@@ -155,10 +154,6 @@ class stream_handler(BaseHTTPRequestHandler):
             self.end_headers()
 
         
-address = ('', 8001)
-server = ThreadingHTTPServer(address, stream_handler)
-server.timeout = 0
-
 ##########################################################
 # local functions
 ##########################################################
