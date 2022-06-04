@@ -42,6 +42,7 @@ period = 0.05 # sec (=50ms)
 class stream_handler(BaseHTTPRequestHandler):
     global cfg_cam_fps
     global interpreter
+    streaming = True
     def do_OPTIONS(self):
         self.send_response(200, "ok")
         self.send_header('Access-Control-Allow-Origin', '*')
@@ -52,10 +53,10 @@ class stream_handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == '/':
-            self.send_response(301)
+            self.send_response(200)
             self.send_header('Location', '/index.html')
             self.end_headers()
-        elif self.path == '/stream.mjpg':
+        if self.path == '/stream.mjpg':
             self.send_response(200)
             self.send_header('Age', 0)
             self.send_header('Cache-Control', 'no-cache, private')
@@ -64,8 +65,9 @@ class stream_handler(BaseHTTPRequestHandler):
             self.end_headers()
             period = 1./cfg_cam_fps
             end_time = time.time() + period
+
             try:
-                while True:
+                while streaming:
                     frame = camera.read_frame()
                     ret, frame = cv2.imencode('.jpg', frame)
                     self.wfile.write(b'--FRAME\r\n')
@@ -104,7 +106,16 @@ class stream_handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         global new_inp_type
-        if self.path == '/upload':
+        if self.path == '/stream.mjpg':
+            self.send_response(201)
+            self.end_headers()
+            self.data_string = self.rfile.read(int(self.headers['Content-Length']))
+            data = json.loads(self.data_string)
+            if data['params']['streaming'] == 'true':
+                streaming = True
+            elif data['params']['streaming'] == 'false':
+                streaming = False
+        elif self.path == '/upload':
             filename = "large-200x66x3.tflite"
             file_length = int(self.headers['Content-Length'])
             read = 0
@@ -122,27 +133,31 @@ class stream_handler(BaseHTTPRequestHandler):
 
             new_inp_type = int(data['params']['input_type'])
 
+
+            ##########################################################
+            # import deeppicar's DNN model
+            ##########################################################
+            print ("Loading model: " + params.model_file)
+            try:
+                # Import TFLite interpreter from tflite_runtime package if it's available.
+                from tflite_runtime.interpreter import Interpreter
+                interpreter = Interpreter(params.model_file+'.tflite', num_threads=args.ncpu)
+            except ImportError:
+                # If not, fallback to use the TFLite interpreter from the full TF package.
+                import tensorflow as tf
+                interpreter = tf.lite.Interpreter(model_path=params.model_file+'.tflite', num_threads=args.ncpu)
+
+            interpreter.allocate_tensors()
+            input_index = interpreter.get_input_details()[0]["index"]
+            output_index = interpreter.get_output_details()[0]["index"]
         else:
             self.send_error(404)
             self.end_headers()
 
-        ##########################################################
-        # import deeppicar's DNN model
-        ##########################################################
-        print ("Loading model: " + params.model_file)
-        try:
-            # Import TFLite interpreter from tflite_runtime package if it's available.
-            from tflite_runtime.interpreter import Interpreter
-            interpreter = Interpreter(params.model_file+'.tflite', num_threads=args.ncpu)
-        except ImportError:
-            # If not, fallback to use the TFLite interpreter from the full TF package.
-            import tensorflow as tf
-            interpreter = tf.lite.Interpreter(model_path=params.model_file+'.tflite', num_threads=args.ncpu)
-
-        interpreter.allocate_tensors()
-        input_index = interpreter.get_input_details()[0]["index"]
-        output_index = interpreter.get_output_details()[0]["index"]
-
+        
+address = ('', 8001)
+server = ThreadingHTTPServer(address, stream_handler)
+server.timeout = 0
 
 ##########################################################
 # local functions
@@ -165,6 +180,7 @@ def turn_off():
     actuator.stop()
     camera.stop()
     cur_inp_stream.stop()
+    server.server_close()
     #if frame_id > 0:
 
 def preprocess(img):
