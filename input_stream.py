@@ -13,9 +13,10 @@ from functools import partial
 import json
 
 class input_stream:
-    def __init__(self):
+    def __init__(self, speed=50):
         self.buffer = ' '
         self.direction = 0.
+        self.speed = speed
 
     def read_inp():
         return self.buffer, self.direction
@@ -76,7 +77,7 @@ class input_kbd(input_stream):
         elif self.buffer == 'k': # center
             self.direction = .0
 
-        return self.buffer, self.direction
+        return self.buffer, self.direction, self.speed
 
 
 class input_gamepad(input_stream):
@@ -178,7 +179,7 @@ class input_gamepad(input_stream):
         self.direction = self.shared_arr[0] 
         self.lock.release()
 
-        return self.buffer, self.direction
+        return self.buffer, self.direction, self.speed
 
     def stop(self):
         #self.finish.value = 0
@@ -271,7 +272,8 @@ class input_web_handler(BaseHTTPRequestHandler):
                 self.shared_arr[3] = 1. 
             elif data['params']['direction'] == 'reverse':
                 self.shared_arr[2] = 1.
-            #TODO throttle
+
+            self.shared_arr[8] = data['params']['speed']
             #actuator.set_speed(data['params']['speed'])
         elif self.path == '/record':
             self.send_response(301)
@@ -318,7 +320,7 @@ class input_web_handler(BaseHTTPRequestHandler):
 # this takes the p
 class input_web(input_stream):
     def __init__(self):
-        self.shared_arr = Array('d', [0.]*8) # joystick pos and other buttons and finish state
+        self.shared_arr = Array('d', [0.]*9) # joystick pos and other buttons and finish state
         self.lock = Lock()
 
         self.ws_process = Process(target=self.web_server_process, \
@@ -364,9 +366,10 @@ class input_web(input_stream):
             #print ("toggle video mode")
 
         self.direction = self.shared_arr[0] 
+        self.speed = self.shared_arr[8]
         self.lock.release()
 
-        return self.buffer, self.direction
+        return self.buffer, self.direction, self.speed
 
     def stop(self):
         self.ws_process.terminate()

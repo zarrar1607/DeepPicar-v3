@@ -158,7 +158,9 @@ while True:
         cv2.imshow('frame', frame)
         ch = cv2.waitKey(1) & 0xFF
     else:
-        command, direction = inp_stream.read_inp()
+        command, direction, speed = inp_stream.read_inp()
+        
+    actuator.set_speed(speed)
 
     if command == 'a':
         actuator.ffw()
