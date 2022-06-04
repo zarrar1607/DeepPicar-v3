@@ -160,19 +160,6 @@ while True:
     else:
         command, direction = inp_stream.read_inp()
 
-    if direction < 0:
-        angle = deg2rad(direction * 30)
-        actuator.left(direction)
-        print ("left")
-    elif direction > 0:
-        angle = deg2rad(direction * 30)
-        actuator.right(direction)
-        print ("right")
-    else:
-        angle=0.
-        actuator.center()
-        print ("center")
-
     if command == 'a':
         actuator.ffw()
         print ("accel")
@@ -211,6 +198,19 @@ while True:
         elif degree >= 15:
             actuator.right()
             print ("right (CPU)")
+    else:
+        if direction < 0:
+            angle = deg2rad(direction * 30)
+            actuator.left(direction)
+            print ("left")
+        elif direction > 0:
+            angle = deg2rad(direction * 30)
+            actuator.right(direction)
+            print ("right")
+        else:
+            angle=0.
+            actuator.center()
+            print ("center")
 
     dur = time.time() - ts
     if dur > period:
