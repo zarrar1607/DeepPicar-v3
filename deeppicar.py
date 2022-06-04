@@ -39,10 +39,13 @@ frame_id = 0
 angle = 0.0
 period = 0.05 # sec (=50ms)
 
+interpreter = None
+input_index = None
+output_index = None
+
 # Web stream and file handling
 class stream_handler(BaseHTTPRequestHandler):
     global cfg_cam_fps
-    global interpreter
     streaming = True
     def do_OPTIONS(self):
         self.send_response(200, "ok")
@@ -132,23 +135,7 @@ class stream_handler(BaseHTTPRequestHandler):
 
             new_inp_type = int(data['params']['input_type'])
 
-
-            ##########################################################
-            # import deeppicar's DNN model
-            ##########################################################
-            print ("Loading model: " + params.model_file)
-            try:
-                # Import TFLite interpreter from tflite_runtime package if it's available.
-                from tflite_runtime.interpreter import Interpreter
-                interpreter = Interpreter(params.model_file+'.tflite', num_threads=args.ncpu)
-            except ImportError:
-                # If not, fallback to use the TFLite interpreter from the full TF package.
-                import tensorflow as tf
-                interpreter = tf.lite.Interpreter(model_path=params.model_file+'.tflite', num_threads=args.ncpu)
-
-            interpreter.allocate_tensors()
-            input_index = interpreter.get_input_details()[0]["index"]
-            output_index = interpreter.get_output_details()[0]["index"]
+            load_model()
         else:
             self.send_error(404)
             self.end_headers()
@@ -201,6 +188,30 @@ def overlay_image(l_img, s_img, x_offset, y_offset):
                   (1.0 - s_img[:,:,3]/255.0))
     return l_img
 
+
+def load_model():
+    global interpreter
+    global input_index
+    global output_index
+    ##########################################################
+    # import deeppicar's DNN model
+    ##########################################################
+    print ("Loading model: " + params.model_file)
+    try:
+        # Import TFLite interpreter from tflite_runtime package if it's available.
+        from tflite_runtime.interpreter import Interpreter
+        interpreter = Interpreter(params.model_file+'.tflite', num_threads=args.ncpu)
+    except ImportError:
+        # If not, fallback to use the TFLite interpreter from the full TF package.
+        import tensorflow as tf
+        interpreter = tf.lite.Interpreter(model_path=params.model_file+'.tflite', num_threads=args.ncpu)
+
+    interpreter.allocate_tensors()
+    input_index = interpreter.get_input_details()[0]["index"]
+    output_index = interpreter.get_output_details()[0]["index"]
+
+
+
 ##########################################################
 # program begins
 ##########################################################
@@ -229,6 +240,7 @@ if args.fpvvideo:
     fpv_video = True
     print("FPV video of DNN driving is on")
 
+load_model()
     
 if args.gamepad:
     cur_inp_type= input_stream.input_type.GAMEPAD
