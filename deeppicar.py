@@ -59,6 +59,7 @@ def g_tick():
 def turn_off():
     actuator.stop()
     camera.stop()
+    inp_stream.stop()
     if frame_id > 0:
         keyfile.close()
         vidfile.release()
@@ -96,6 +97,7 @@ parser.add_argument("-t", "--throttle", help="throttle percent. [0-100]%", type=
 parser.add_argument("-n", "--ncpu", help="number of cores to use.", type=int, default=1)
 parser.add_argument("-f", "--hz", help="control frequnecy", type=int)
 parser.add_argument("-g", "--gamepad", help="Use gamepad", action="store_true")
+parser.add_argument("-w", "--web", help="Use webpage based input", action="store_true")
 parser.add_argument("--fpvvideo", help="Take FPV video of DNN driving", action="store_true")
 args = parser.parse_args()
 
@@ -113,6 +115,8 @@ if args.fpvvideo:
     print("FPV video of DNN driving is on")
 if args.gamepad:
     inp_stream= input_stream.input_gamepad()
+elif args.web:
+    inp_stream= input_stream.input_web()
 else:
     inp_stream= input_stream.input_kbd()
 
