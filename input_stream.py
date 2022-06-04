@@ -333,3 +333,19 @@ class input_web(input_stream):
 
     def stop(self):
         self.ws_process.terminate()
+
+class input_type:
+    KEYBOARD=0
+    GAMEPAD=1
+    WEB=2
+
+def instantiate_inp_stream(inp_type, def_throttle):
+    inp_stream = None
+    if inp_type == input_type.KEYBOARD:
+        inp_stream= input_kbd(def_throttle)
+    elif inp_type == input_type.GAMEPAD:
+        inp_stream= input_gamepad(def_throttle)
+    elif inp_type == input_type.WEB:
+        inp_stream= input_web(def_throttle)
+
+    return inp_stream

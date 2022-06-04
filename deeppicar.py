@@ -13,7 +13,6 @@ from multiprocessing import Process, Lock, Array
 from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 
 from PIL import Image, ImageDraw
-#import input_kbd
 import input_stream
 
 ##########################################################
@@ -30,7 +29,6 @@ use_thread = True
 view_video = False
 fpv_video = False
 enable_record = False
-inp_stream= None
 
 cfg_cam_res = (320, 240)
 cfg_cam_fps = 20
@@ -81,6 +79,7 @@ class stream_handler(BaseHTTPRequestHandler):
                     if tdiff > 0:
                         time.sleep(tdiff)
                     end_time += period
+                    print('streaming')
             except Exception as e:
                 logging.warning(
                     'Removed streaming client %s: %s',
@@ -104,6 +103,7 @@ class stream_handler(BaseHTTPRequestHandler):
             self.end_headers()
 
     def do_POST(self):
+        global new_inp_type
         if self.path == '/upload':
             filename = "large-200x66x3.tflite"
             file_length = int(self.headers['Content-Length'])
@@ -114,6 +114,14 @@ class stream_handler(BaseHTTPRequestHandler):
             self.end_headers()
             reply_body = 'Saved "%s"\n' % filename
             self.wfile.write(reply_body.encode('utf-8'))
+        elif self.path == '/input_switch':
+            self.send_response(301)
+            self.end_headers()
+            self.data_string = self.rfile.read(int(self.headers['Content-Length']))
+            data = json.loads(self.data_string)
+
+            new_inp_type = int(data['params']['input_type'])
+
         else:
             self.send_error(404)
             self.end_headers()
@@ -135,9 +143,6 @@ class stream_handler(BaseHTTPRequestHandler):
         input_index = interpreter.get_input_details()[0]["index"]
         output_index = interpreter.get_output_details()[0]["index"]
 
-address = ('', 8001)
-server = ThreadingHTTPServer(address, stream_handler)
-server.timeout = 0
 
 ##########################################################
 # local functions
@@ -159,7 +164,7 @@ def g_tick():
 def turn_off():
     actuator.stop()
     camera.stop()
-    inp_stream.stop()
+    cur_inp_stream.stop()
     #if frame_id > 0:
 
 def preprocess(img):
@@ -212,12 +217,20 @@ if args.hz:
 if args.fpvvideo:
     fpv_video = True
     print("FPV video of DNN driving is on")
+
+    
 if args.gamepad:
-    inp_stream= input_stream.input_gamepad(cfg_throttle)
+    cur_inp_type= input_stream.input_type.GAMEPAD
 elif args.web:
-    inp_stream= input_stream.input_web(cfg_throttle)
+    cur_inp_type= input_stream.input_type.WEB
 else:
-    inp_stream= input_stream.input_kbd(cfg_throttle)
+    cur_inp_type= input_stream.input_type.KEYBOARD
+new_inp_type=cur_inp_type
+cur_inp_stream= input_stream.instantiate_inp_stream(cur_inp_type, cfg_throttle)
+
+address = ('', 8001)
+server = ThreadingHTTPServer(address, stream_handler)
+server.timeout = 0
 
 # initlaize deeppicar modules
 actuator.init(cfg_throttle)
@@ -236,11 +249,16 @@ while True:
     frame = camera.read_frame()
     ts = time.time()
 
+    if new_inp_type != cur_inp_type:
+        del cur_inp_stream
+        cur_inp_type= new_inp_type
+        cur_inp_stream= input_stream.instantiate_inp_stream(cur_inp_type, cfg_throttle)
+
     if view_video:
         cv2.imshow('frame', frame)
         ch = cv2.waitKey(1) & 0xFF
     else:
-        command, direction, speed = inp_stream.read_inp()
+        command, direction, speed = cur_inp_stream.read_inp()
         
     actuator.set_speed(speed)
 
