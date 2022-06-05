@@ -317,13 +317,13 @@ while True:
         interpreter.set_tensor(input_index, img)
         interpreter.invoke()
         angle = interpreter.get_tensor(output_index)[0][0]
-        if angle < 0.5:
+        if rad2deg(angle) < -15:
             actuator.left()
             print ("left (CPU)")
-        elif angle >= 0.5 and angle <= 1.5:
+        elif rad2deg(angle) >= -15 and rad2deg(angle) <= 15:
             actuator.center()
             print ("center (CPU)")
-        elif angle > 1.5:
+        elif rad2deg(angle) > 15:
             actuator.right()
             print ("right (CPU)")
     else:
