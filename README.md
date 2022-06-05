@@ -37,7 +37,7 @@ Also install the python package "inputs" if you would like to to use Logitech F7
 
 To start the backend server
 
-    $ sudo python3 webcamstream.py
+    $ sudo python3 deeppicar.py -w
 
 To start the web client
 
