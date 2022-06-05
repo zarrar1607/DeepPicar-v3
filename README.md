@@ -41,6 +41,8 @@ To start the backend server
 
 To start the web client
 
+    $ sudo apt install nodejs npm
+    $ npm i serve
     $ npx serve web/dist
 
 Using the web client, you can control the car, record and download data, upload the model, and run the DNN
