@@ -15,6 +15,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from PIL import Image, ImageDraw
 import input_stream
 import json
+import logging
 
 ##########################################################
 # import deeppicar's sensor/actuator modules
@@ -121,21 +122,19 @@ class stream_handler(BaseHTTPRequestHandler):
             filename = "large-200x66x3.tflite"
             file_length = int(self.headers['Content-Length'])
             read = 0
-            with open(filename, 'wb+') as output_file:
+            with open('./models/'+filename, 'wb') as output_file:
                 output_file.write(self.rfile.read(file_length))
             self.send_response(201, 'Created')
             self.end_headers()
             reply_body = 'Saved "%s"\n' % filename
             self.wfile.write(reply_body.encode('utf-8'))
+            load_model()
         elif self.path == '/input_switch':
             self.send_response(301)
             self.end_headers()
             self.data_string = self.rfile.read(int(self.headers['Content-Length']))
             data = json.loads(self.data_string)
-
             new_inp_type = int(data['params']['input_type'])
-
-            load_model()
         else:
             self.send_error(404)
             self.end_headers()
@@ -159,6 +158,7 @@ def g_tick():
         yield max(t + count*period - time.time(),0)
 
 def turn_off():
+    stream_handler.streaming = False
     actuator.stop()
     camera.stop()
     cur_inp_stream.stop()

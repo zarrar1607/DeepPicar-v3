@@ -24,7 +24,7 @@ img_channels = 3
 #   "model_large"   <-- nvidia dave-2 model
 ##########################################################
 model_name = "model_large"
-model_file = "./{}-{}x{}x{}".format(model_name[6:], img_width, img_height, img_channels)
+model_file = "./models/{}-{}x{}x{}".format(model_name[6:], img_width, img_height, img_channels)
 
 ##########################################################
 # recording config 
