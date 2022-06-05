@@ -288,7 +288,7 @@ class input_web(input_stream):
         #server = HTTPServer(address, handler)
         server = ThreadingHTTPServer(address, handler)
         try:
-            server.serve_forever() # until terminated
+            server.serve_forever(poll_interval=0.05) # until terminated
         except KeyboardInterrupt:
             pass
         server.server_close()
