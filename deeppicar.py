@@ -275,7 +275,7 @@ while True:
     if new_inp_type != cur_inp_type:
         del cur_inp_stream
         cur_inp_type= new_inp_type
-        cur_inp_stream= input_stream.instantiate_inp_stream(cur_inp_type, cfg_throttle)
+        cur_inp_stream= input_stream.instantiate_inp_stream(cur_inp_type, speed)
 
     if view_video:
         cv2.imshow('frame', frame)
