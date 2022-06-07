@@ -33,7 +33,7 @@ fpv_video = False
 enable_record = False
 
 cfg_cam_res = (320, 240)
-cfg_cam_fps = 20
+cfg_cam_fps = 30
 cfg_throttle = 50 # 50% power.
 
 frame_id = 0
@@ -317,13 +317,14 @@ while True:
         interpreter.set_tensor(input_index, img)
         interpreter.invoke()
         angle = interpreter.get_tensor(output_index)[0][0]
-        if rad2deg(angle) < -15:
+        action_limit = 8
+        if rad2deg(angle) < -action_limit:
             actuator.left()
             print ("left (CPU)")
-        elif rad2deg(angle) >= -15 and rad2deg(angle) <= 15:
+        elif rad2deg(angle) >= -action_limit and rad2deg(angle) <= action_limit:
             actuator.center()
             print ("center (CPU)")
-        elif rad2deg(angle) > 15:
+        elif rad2deg(angle) > action_limit:
             actuator.right()
             print ("right (CPU)")
     else:
