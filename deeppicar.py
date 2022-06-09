@@ -317,7 +317,7 @@ while True:
         interpreter.set_tensor(input_index, img)
         interpreter.invoke()
         angle = interpreter.get_tensor(output_index)[0][0]
-        action_limit = 8
+        action_limit = 10
         if rad2deg(angle) < -action_limit:
             actuator.left()
             print ("left (CPU)")
