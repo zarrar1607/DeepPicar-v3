@@ -33,16 +33,19 @@ Also install the python package "inputs" if you would like to to use Logitech F7
     $ cd inputs
     $ python setup.py install
     
+Lastly install node.js and serve package to enable web interface
+
+    $ sudo apt install nodejs npm
+    $ npm i serve
+    
 ## Manual control and Data collection
 
 To start the backend server
 
-    $ sudo python3 deeppicar.py -w
+    $ sudo python3 deeppicar.py -w -n 4 -f 30
 
 To start the web client
 
-    $ sudo apt install nodejs npm
-    $ npm i serve
     $ npx serve web/dist
 
 Using the web client, you can control the car, record and download data, upload the model, and run the DNN
