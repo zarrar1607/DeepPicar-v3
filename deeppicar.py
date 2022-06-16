@@ -17,6 +17,9 @@ import input_stream
 import json
 import logging
 
+import signal
+import sys
+
 ##########################################################
 # import deeppicar's sensor/actuator modules
 ##########################################################
@@ -43,6 +46,7 @@ period = 0.05 # sec (=50ms)
 interpreter = None
 input_index = None
 output_index = None
+finish = False
 
 # Web stream and file handling
 class stream_handler(BaseHTTPRequestHandler):
@@ -158,12 +162,12 @@ def g_tick():
         yield max(t + count*period - time.time(),0)
 
 def turn_off():
+    print('Finishing...')
     stream_handler.streaming = False
+    server.server_close()
     actuator.stop()
     camera.stop()
     cur_inp_stream.stop()
-    server.server_close()
-    #if frame_id > 0:
 
 def preprocess(img):
     img = img[img.shape[0]//2:]
@@ -211,6 +215,11 @@ def load_model():
     input_index = interpreter.get_input_details()[0]["index"]
     output_index = interpreter.get_output_details()[0]["index"]
 
+def signal_handler(sig, frame):
+    global finish
+    finish = True
+
+signal.signal(signal.SIGINT, signal_handler)
 
 
 ##########################################################
@@ -259,7 +268,6 @@ server.timeout = 0
 # initlaize deeppicar modules
 actuator.init(cfg_throttle)
 camera.init(res=cfg_cam_res, fps=cfg_cam_fps, threading=use_thread)
-atexit.register(turn_off)
 
 g = g_tick()
 start_ts = time.time()
@@ -267,7 +275,7 @@ start_ts = time.time()
 frame_arr = []
 angle_arr = []
 # enter main loop
-while True:
+while not finish:
     if use_thread:
         time.sleep(next(g))
     frame = camera.read_frame()
@@ -309,6 +317,7 @@ while True:
         print ("toggle DNN mode")
         use_dnn = not use_dnn
     elif command == 'q':
+        finish = True
         break
 
     if use_dnn:
@@ -389,5 +398,4 @@ while True:
            (ts, frame_id, angle, int((time.time() - ts)*1000)))
 
     server.handle_request()
-print ("Finish..")
 turn_off()
