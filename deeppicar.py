@@ -166,6 +166,7 @@ def turn_off():
     #if frame_id > 0:
 
 def preprocess(img):
+    img = img[img.shape[0]//2:]
     img = cv2.resize(img, (params.img_width, params.img_height))
     # Convert to grayscale and readd channel dimension
     if params.img_channels == 1:
