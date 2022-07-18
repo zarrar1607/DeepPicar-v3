@@ -29,5 +29,6 @@ model_file = "./models/{}-{}x{}x{}".format(model_name[6:], img_width, img_height
 ##########################################################
 # recording config 
 ##########################################################
-rec_vid_file="out-video.avi"
-rec_csv_file="out-key.csv"
+data_dir = './data/'
+rec_vid_file = data_dir + "out-video.avi"
+rec_csv_file = data_dir + "out-key.csv"
