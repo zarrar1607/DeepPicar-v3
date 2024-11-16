@@ -100,12 +100,13 @@ To fine-tune the model, use the Jupyter Notebook "[Retrain and Transfer Learn.ip
 
 ### Data Collection
 You will need to record three additional laps of data in varying environmental conditions. These conditions can include:
-<ol>
+<ul>
 <li>Different lighting (e.g., dim or bright light settings).</li>
 <li>A new track layout.</li>
 <li>Reversing the car's direction on the same track.</li>
 <li>This additional data is essential to help the model adapt and generalize to new settings.</li>
-</ol>
+</ul>
+
 ### Fine-Tuning Process
 The key idea behind fine-tuning is to freeze two layers of the existing model while training the remaining layers on the new dataset. By doing so, the model retains its performance in the original environment while adapting to the new conditions, thus improving its generalizability.
 
