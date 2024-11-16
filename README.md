@@ -96,7 +96,7 @@ Enable autonomous driving through the `Start DNN` button.
 Some other examples of the DeepPicar driving can be found at: https://photos.app.goo.gl/q40QFieD5iI9yXU42
 
 ## Fining Tuning
-To fine-tune the model, use the Jupyter Notebook "[Retrain and Transfer Learn.ipynb]" (https://github.com/zarrar1607/DeepPicar-v3/blob/main/Retrain_and_Transfer_Learn.ipynb). provided in the DeepPiCar repository. This notebook includes step-by-step instructions for the fine-tuning process.
+To fine-tune the model, use the Jupyter Notebook "[Retrain and Transfer Learn.ipynb](https://github.com/zarrar1607/DeepPicar-v3/blob/main/Retrain_and_Transfer_Learn.ipynb)". provided in the DeepPiCar repository. This notebook includes step-by-step instructions for the fine-tuning process.
 
 ### Data Collection
 You will need to record three additional laps of data in varying environmental conditions. These conditions can include:
