@@ -110,5 +110,19 @@ You will need to record three additional laps of data in varying environmental c
 ### Fine-Tuning Process
 The key idea behind fine-tuning is to freeze two layers of the existing model while training the remaining layers on the new dataset. By doing so, the model retains its performance in the original environment while adapting to the new conditions, thus improving its generalizability.
 
+### Installation
+Install TensorFlow: Use the command pip install –no-cache-dir tensorflow to in-
+stall TensorFlow2.
+2. Upgrade Packages: Use the command below to upgrade outdated packages. For more de-
+tails, see 3.
+pip3 list -- outdated -- format = freeze | grep -v ’^\ -e ’
+| cut -d = -f 1 | xargs - n1 pip3 install -U
+3. Install Compatible Flatbuffers: The following version is necessary to ensure compatibility
+with TensorFlow Lite.
+pip install flatbuffers ==2.0
+4. Increase Swap File Size:
+The default swap size and available RAM may not be sufficient for training. Follow the
+instructions on 4 to enable on-device training effectively
+
 ### Demonstration
 For a quick demonstration of the fine-tuning process and results, watch this [video](https://youtube.com/shorts/gDC6Y_qBBx4?si=O_FPp69FHaZu_Moy).
