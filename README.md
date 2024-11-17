@@ -125,8 +125,7 @@ with TensorFlow Lite.
 
 4. Increase Swap File Size:
 The default swap size and available RAM may not be sufficient for training. Follow the
-instructions on [website](https://nebl.io/neblio-university/enabling-increasing-raspberry-pi-swap/increasing Rasp-
-berry Pi swap size) to enable on-device training effectively
+instructions on [increasing Raspberry Pi swap size](https://nebl.io/neblio-university/enabling-increasing-raspberry-pi-swap/) to enable on-device training effectively
 
 ### Demonstration
 For a quick demonstration of the fine-tuning process and results, watch this [video](https://youtube.com/shorts/gDC6Y_qBBx4?si=O_FPp69FHaZu_Moy).
